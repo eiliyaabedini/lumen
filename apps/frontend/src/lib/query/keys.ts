@@ -25,12 +25,13 @@ export const qk = {
   reviewsStats: ["me", "reviews", "stats"] as const,
   mastery: ["me", "mastery"] as const,
   runtimeFlags: ["runtime-flags"] as const,
-  demoQuestions: (courseSlug?: string) =>
-    ["demo-questions", courseSlug ?? "all"] as const,
+  demoQuestions: (courseSlug?: string) => ["demo-questions", courseSlug ?? "all"] as const,
   evalPublic: ["eval-public"] as const,
   // S5 (BYOK)
   llmProviders: ["llm-providers"] as const,
   llmCredentials: ["me", "llm-credentials"] as const,
+  aipassStatus: ["me", "aipass", "status"] as const,
+  aipassModels: ["me", "aipass", "models"] as const,
   // S2.12 — moderation surfaces. ``catalogRoot`` is the prefix used to
   // invalidate every catalog/subjects/tags query in one call on a share/
   // approve/delist mutation.

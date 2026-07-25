@@ -50,6 +50,15 @@ vi.mock("@/lib/auth/store", () => ({ useAuth: () => authState }));
 const providersList = vi.fn<[], Promise<LLMProviderRegistry>>();
 const credentialsList = vi.fn(async () => []);
 vi.mock("@/lib/api/endpoints", () => ({
+  AIPass: {
+    status: async () => ({
+      available: false,
+      connected: false,
+      active: false,
+      model: null,
+      status: "unavailable",
+    }),
+  },
   LLMProviders: { list: () => providersList() },
   LLMCredentials: { list: () => credentialsList() },
 }));
@@ -141,9 +150,7 @@ describe("ModelSettingsPage (F6 BYOK gate)", () => {
 
     renderPage();
 
-    await waitFor(() =>
-      expect(replaceMock).toHaveBeenCalledWith("/login?next=/profile/model"),
-    );
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/login?next=/profile/model"));
     // Anonymous render is null — no providers fetch fires (query disabled).
     expect(providersList).not.toHaveBeenCalled();
   });

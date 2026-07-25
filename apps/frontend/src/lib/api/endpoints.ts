@@ -1,5 +1,7 @@
 import { api } from "@/lib/api/client";
 import type {
+  AIPassModels,
+  AIPassStatus,
   BriefCourseStatus,
   BriefDraft,
   BriefOut,
@@ -44,15 +46,17 @@ export const Auth = {
 export const Catalog = {
   subjects: () => api<SubjectOut[]>("/api/v1/subjects"),
   tags: () => api<TagOut[]>("/api/v1/tags"),
-  courses: (params: {
-    q?: string;
-    subject?: string;
-    tag?: string;
-    difficulty?: string;
-    sort?: string;
-    page?: number;
-    page_size?: number;
-  } = {}) => {
+  courses: (
+    params: {
+      q?: string;
+      subject?: string;
+      tag?: string;
+      difficulty?: string;
+      sort?: string;
+      page?: number;
+      page_size?: number;
+    } = {},
+  ) => {
     const qs = new URLSearchParams();
     for (const [k, v] of Object.entries(params)) {
       if (v !== undefined && v !== null && v !== "") qs.set(k, String(v));
@@ -115,18 +119,18 @@ export const Courses = {
 
   // S6.3 — any authenticated user files a report against a publicly-listed
   // course. `note` is sanitized server-side (FR-MOD-13).
-  report: (
-    id: string,
-    body: { reason: ReasonCode; note?: string | null },
-    token?: string,
-  ) =>
+  report: (id: string, body: { reason: ReasonCode; note?: string | null }, token?: string) =>
     api<{ ok: true }>(`/api/v1/courses/${encodeURIComponent(id)}/report`, {
       method: "POST",
       body,
       token,
     }),
 
-  createModule: (courseId: string, input: { title: string; description?: string }, token?: string) =>
+  createModule: (
+    courseId: string,
+    input: { title: string; description?: string },
+    token?: string,
+  ) =>
     api<ModuleOut>(`/api/v1/courses/${courseId}/modules`, { method: "POST", body: input, token }),
   reorderModules: (courseId: string, order: Record<string, number>, token?: string) =>
     api<{ ok: true }>(`/api/v1/courses/${courseId}/modules/order`, {
@@ -243,11 +247,7 @@ export const Admin = {
       token,
     }),
   // `reason` is required (the backend 422s without it).
-  removeCourse: (
-    id: string,
-    body: { reason: ReasonCode; note?: string | null },
-    token?: string,
-  ) =>
+  removeCourse: (id: string, body: { reason: ReasonCode; note?: string | null }, token?: string) =>
     api<CourseAdminOut>(`/api/v1/admin/courses/${id}/remove`, {
       method: "POST",
       body,
@@ -285,11 +285,7 @@ export const Admin = {
       body: { is_admin: isAdmin },
       token,
     }),
-  suspendUser: (
-    id: string,
-    body: { reason: ReasonCode; note?: string | null },
-    token?: string,
-  ) =>
+  suspendUser: (id: string, body: { reason: ReasonCode; note?: string | null }, token?: string) =>
     api<UserAdminOut>(`/api/v1/admin/users/${id}/suspend`, {
       method: "PATCH",
       body,
@@ -335,8 +331,7 @@ export const Me = {
   /** Phase E7 — bundled mastery dashboard (weak spots + per-course
    *  rollups). Fetched as a single round-trip so the surface paints
    *  both sections on one loading state. */
-  mastery: (token?: string) =>
-    api<MasteryResponse>("/api/v1/me/mastery", { token }),
+  mastery: (token?: string) => api<MasteryResponse>("/api/v1/me/mastery", { token }),
   markNotificationRead: (id: string, token?: string) =>
     api<{ ok: true }>(`/api/v1/me/notifications/${id}/read`, { method: "POST", token }),
   markAllNotificationsRead: (token?: string) =>
@@ -357,10 +352,9 @@ export const Me = {
     if (params.limit) q.set("limit", String(params.limit));
     if (params.unread) q.set("unread", "true");
     const qs = q.toString();
-    return api<NotificationInboxPage>(
-      `/api/v1/me/notifications/inbox${qs ? `?${qs}` : ""}`,
-      { token },
-    );
+    return api<NotificationInboxPage>(`/api/v1/me/notifications/inbox${qs ? `?${qs}` : ""}`, {
+      token,
+    });
   },
   deleteNotification: (id: string, token?: string) =>
     api<{ ok: true }>(`/api/v1/me/notifications/${id}`, { method: "DELETE", token }),
@@ -395,8 +389,7 @@ export const LLMProviders = {
 /** Per-user BYOK credential CRUD + validate. The api_key is write-only;
  * reads are always masked (LLMCredentialPublic carries last4 + status). */
 export const LLMCredentials = {
-  list: (token?: string) =>
-    api<LLMCredentialPublic[]>("/api/v1/me/llm-credentials", { token }),
+  list: (token?: string) => api<LLMCredentialPublic[]>("/api/v1/me/llm-credentials", { token }),
   upsert: (
     provider: string,
     body: { model: string; api_key: string; allow_platform_fallback?: boolean },
@@ -429,15 +422,34 @@ export const LLMCredentials = {
     }),
 };
 
+/** Optional server-owned OAuth account connection. Tokens never enter JS. */
+export const AIPass = {
+  status: (token?: string) => api<AIPassStatus>("/api/v1/me/aipass/status", { token }),
+  models: (token?: string) => api<AIPassModels>("/api/v1/me/aipass/models", { token }),
+  selectModel: (model: string, token?: string) =>
+    api<AIPassStatus>("/api/v1/me/aipass/model", {
+      method: "PUT",
+      body: { model },
+      token,
+    }),
+  setActive: (is_active: boolean, token?: string) =>
+    api<AIPassStatus>("/api/v1/me/aipass", {
+      method: "PATCH",
+      body: { is_active },
+      token,
+    }),
+  disconnect: (token?: string) =>
+    api<{ ok: true }>("/api/v1/me/aipass", {
+      method: "DELETE",
+      token,
+    }),
+};
+
 // ---------- Mastery dashboard (Phase E7) ----------
 
 /** Stable signal codes attached to a weak-spot row. The frontend
  * localises each code and picks a Badge variant from it. */
-export type MasterySignal =
-  | "quiz_failed"
-  | "card_overdue"
-  | "quiz_low"
-  | "tutor_repeat";
+export type MasterySignal = "quiz_failed" | "card_overdue" | "quiz_low" | "tutor_repeat";
 
 /** Slimmed lesson + course context attached to a weak-spot row. */
 export interface MasteryWeakSpotLesson {
@@ -489,11 +501,7 @@ export type NotificationKind =
   // which silently dropped it from the prefs form (P2.8 drift fix).
   | "course_cloned";
 
-export type NotificationDispatch =
-  | "off"
-  | "in_app"
-  | "email_immediate"
-  | "digest_daily";
+export type NotificationDispatch = "off" | "in_app" | "email_immediate" | "digest_daily";
 
 export interface NotificationPrefsResponse {
   prefs: Record<NotificationKind, NotificationDispatch>;
@@ -646,47 +654,34 @@ export const AI = {
       body: input,
       token,
     }),
-  lessonBody: (
-    input: { lesson_title: string; course_context?: string },
-    token?: string,
-  ) =>
+  lessonBody: (input: { lesson_title: string; course_context?: string }, token?: string) =>
     api<{ blocks: Record<string, unknown> }>("/api/v1/studio/ai/lesson-body", {
       method: "POST",
       body: input,
       token,
     }),
-  quiz: (
-    input: { lesson_title: string; course_context?: string; n?: number },
-    token?: string,
-  ) =>
+  quiz: (input: { lesson_title: string; course_context?: string; n?: number }, token?: string) =>
     api<{ questions: AIQuizQuestion[] }>("/api/v1/studio/ai/quiz", {
       method: "POST",
       body: input,
       token,
     }),
-  commitOutline: (
-    input: { course_id: string; outline: CourseOutline },
-    token?: string,
-  ) =>
+  commitOutline: (input: { course_id: string; outline: CourseOutline }, token?: string) =>
     api<CommitOutlineResponse>("/api/v1/studio/ai/commit-outline", {
       method: "POST",
       body: input,
       token,
     }),
-  draftCourse: (
-    input: { brief: string; subject_slug: string },
-    token?: string,
-  ) =>
+  draftCourse: (input: { brief: string; subject_slug: string }, token?: string) =>
     api<DraftCourseResponse>("/api/v1/studio/ai/draft-course", {
       method: "POST",
       body: input,
       token,
     }),
   draftTrace: (courseId: string, token?: string) =>
-    api<DraftTraceResponse>(
-      `/api/v1/studio/drafts/${encodeURIComponent(courseId)}/trace`,
-      { token },
-    ),
+    api<DraftTraceResponse>(`/api/v1/studio/drafts/${encodeURIComponent(courseId)}/trace`, {
+      token,
+    }),
 };
 
 // ---------- S3: goal-intake → define → build (FR-DEFINE) ----------
@@ -709,17 +704,19 @@ export const Define = {
   /** Advance the conversation by one learner reply (FR-DEFINE-02/08). At the
    *  cap the server returns 429 `define.turn_cap` (no LLM call). */
   takeTurn: (sessionId: string, message: string, token?: string) =>
-    api<GoalTurnResponse>(
-      `/api/v1/ai/goal/${encodeURIComponent(sessionId)}/turn`,
-      { method: "POST", body: { message }, token },
-    ),
+    api<GoalTurnResponse>(`/api/v1/ai/goal/${encodeURIComponent(sessionId)}/turn`, {
+      method: "POST",
+      body: { message },
+      token,
+    }),
   /** Freeze the brief into an immutable `BriefOut`, applying optional last-mile
    *  `edits` once (FR-DEFINE-03). A second finalize → 422. */
   finalize: (sessionId: string, edits?: BriefDraft, token?: string) =>
-    api<BriefOut>(
-      `/api/v1/ai/goal/${encodeURIComponent(sessionId)}/finalize`,
-      { method: "POST", body: { edits: edits ?? null }, token },
-    ),
+    api<BriefOut>(`/api/v1/ai/goal/${encodeURIComponent(sessionId)}/finalize`, {
+      method: "POST",
+      body: { edits: edits ?? null },
+      token,
+    }),
   /** Build a PRIVATE draft course from a finalized brief (FR-DEFINE-05/11). The
    *  canonical learner build entry; idempotent on the brief id. */
   draftFromBrief: (briefId: string, token?: string) =>
@@ -731,18 +728,15 @@ export const Define = {
   /** Cancel an in-flight / abandoned build (DR-1a / FR-DEFINE-14a). Owner-scoped
    *  (404 existence-hide for non-owner); flips the course to `build_failed`. */
   cancelBuild: (courseId: string, token?: string) =>
-    api<{ ok: true }>(
-      `/api/v1/me/courses/${encodeURIComponent(courseId)}/cancel-build`,
-      { method: "POST", token },
-    ),
+    api<{ ok: true }>(`/api/v1/me/courses/${encodeURIComponent(courseId)}/cancel-build`, {
+      method: "POST",
+      token,
+    }),
   /** The in-flight/built course a finalized brief produced (Gate-B F1). Polled
    *  while building to obtain the cancel target + terminal state before the
    *  synchronous build endpoint returns. 404 = shell not materialized yet. */
   briefCourse: (briefId: string, token?: string) =>
-    api<BriefCourseStatus>(
-      `/api/v1/me/briefs/${encodeURIComponent(briefId)}/course`,
-      { token },
-    ),
+    api<BriefCourseStatus>(`/api/v1/me/briefs/${encodeURIComponent(briefId)}/course`, { token }),
 };
 
 // ---------- Learner + instructor agent traces (Phase I4) ----------
@@ -823,11 +817,7 @@ export interface DraftReplayResponse {
 }
 
 export const Traces = {
-  tutorTurn: (
-    conversationId: string,
-    messageId: string,
-    token?: string,
-  ) =>
+  tutorTurn: (conversationId: string, messageId: string, token?: string) =>
     api<TutorTurnTraceResponse>(
       `/api/v1/me/tutor/conversations/${encodeURIComponent(
         conversationId,
@@ -835,10 +825,9 @@ export const Traces = {
       { token },
     ),
   draftReplay: (courseId: string, token?: string) =>
-    api<DraftReplayResponse>(
-      `/api/v1/me/studio/drafts/${encodeURIComponent(courseId)}/replay`,
-      { token },
-    ),
+    api<DraftReplayResponse>(`/api/v1/me/studio/drafts/${encodeURIComponent(courseId)}/replay`, {
+      token,
+    }),
 };
 
 // ---------- Reviews ----------
@@ -893,8 +882,7 @@ export type ReviewRating = "again" | "hard" | "good" | "easy";
 export const ReviewsQueue = {
   queue: (token?: string, limit = 20) =>
     api<ReviewQueueResponse>(`/api/v1/me/reviews/queue?limit=${limit}`, { token }),
-  stats: (token?: string) =>
-    api<ReviewStatsResponse>("/api/v1/me/reviews/stats", { token }),
+  stats: (token?: string) => api<ReviewStatsResponse>("/api/v1/me/reviews/stats", { token }),
   grade: (cardId: string, rating: ReviewRating, token?: string) =>
     api<ReviewCardOut>(`/api/v1/me/reviews/${cardId}/grade`, {
       method: "POST",
@@ -1029,10 +1017,7 @@ export interface DemoQuestionLibrary {
 
 export const DemoQuestionsApi = {
   list: (courseSlug?: string) => {
-    const qs = courseSlug
-      ? `?course_slug=${encodeURIComponent(courseSlug)}`
-      : "";
+    const qs = courseSlug ? `?course_slug=${encodeURIComponent(courseSlug)}` : "";
     return api<DemoQuestionLibrary>(`/api/v1/demo-questions${qs}`);
   },
 };
-
