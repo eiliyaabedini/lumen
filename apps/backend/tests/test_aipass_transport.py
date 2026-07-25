@@ -21,11 +21,19 @@ from app.services.llm import ChatMessage
             {
                 "object": "list",
                 "data": [
-                    {"id": "live-model-a", "name": "Model A"},
-                    {"id": "live-model-b"},
+                    {
+                        "id": "openai/live-model-a",
+                        "object": "model",
+                        "created": 1_700_000_000,
+                        "owned_by": "openai",
+                        "name": "Model A",
+                        "future_metadata": {"region": "global"},
+                    },
+                    {"id": "anthropic/live-model-b"},
                 ],
+                "future_page": {"cursor": None},
             },
-            ["live-model-a", "live-model-b"],
+            ["openai/live-model-a", "anthropic/live-model-b"],
         ),
         (["legacy-model-a", "legacy-model-b"], ["legacy-model-a", "legacy-model-b"]),
         ([], []),
@@ -36,7 +44,7 @@ def test_parse_models_accepts_openai_and_legacy_shapes(payload, expected) -> Non
     assert [m.id for m in models] == expected
 
 
-def test_parse_models_excludes_detailed_non_chat_models() -> None:
+def test_parse_models_excludes_advertised_non_chat_models() -> None:
     models = aipass_client.parse_models(
         {
             "object": "list",
@@ -58,11 +66,28 @@ def test_parse_models_excludes_detailed_non_chat_models() -> None:
     assert [model.id for model in models] == ["chat-model"]
 
 
+def test_parse_models_preserves_provider_prefixed_ids_byte_for_byte() -> None:
+    expected = " provider/model-with-slashes "
+    openai_models = aipass_client.parse_models(
+        {"object": "list", "data": [{"id": expected, "object": "model"}]}
+    )
+    legacy_models = aipass_client.parse_models([expected])
+
+    assert openai_models[0].id == expected
+    assert legacy_models[0].id == expected
+
+
 @pytest.mark.parametrize(
     "payload",
     [
         {"object": "list", "data": "not-a-list"},
+        {"data": [{"id": "missing-envelope-object"}]},
         {"data": [{"id": ""}, {"name": "missing-id"}]},
+        {"object": "list", "data": [{"id": "model", "methods": "chat_completions"}]},
+        {"object": "list", "data": [{"id": "model", "methods": ["   "]}]},
+        {"object": "list", "data": [{"id": "provider/model\ninjected"}]},
+        {"object": "list", "data": [{"id": "provider/\u202emodel"}]},
+        {"object": "list", "data": [{"id": "m" * 129}]},
         [1, None, {"id": "not-legacy"}],
     ],
 )
@@ -71,7 +96,7 @@ def test_parse_models_rejects_malformed_shapes(payload) -> None:
         aipass_client.parse_models(payload)
 
 
-async def test_model_discovery_uses_detailed_true_and_bearer_only() -> None:
+async def test_model_discovery_uses_openai_default_and_bearer_only() -> None:
     seen: dict[str, object] = {}
 
     async def handler(request: httpx.Request) -> httpx.Response:
@@ -93,7 +118,7 @@ async def test_model_discovery_uses_detailed_true_and_bearer_only() -> None:
     assert [m.id for m in models] == ["live-model"]
     assert seen == {
         "path": "/oauth2/v1/models",
-        "query": {"detailed": ["true"]},
+        "query": {},
         "authorization": "Bearer model-access-token",
     }
 

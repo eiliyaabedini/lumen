@@ -71,11 +71,14 @@ control. The feature must remain inert when either prerequisite is absent.
 ### Models and dispatch
 
 - Discover models live with
-  `GET https://aipass.one/oauth2/v1/models?detailed=true`. Accept the OpenAI
-  list envelope (`{"object":"list","data":[...]}`) and the legacy string-array
-  shape defensively. When detailed entries advertise methods, expose only
-  `chat_completions` models. Do not add AI Pass model identifiers to a
-  source-code allowlist.
+  `GET https://aipass.one/oauth2/v1/models`, whose default response is the
+  OpenAI list envelope (`{"object":"list","data":[...]}`). Ignore additive
+  fields and accept the legacy string-array shape only as a migration fallback.
+  Preserve accepted provider-prefixed model IDs exactly. When entries advertise
+  a valid `methods` array, expose only `chat_completions` models. Lumen's
+  existing 128-character ID and 256-character display-name bounds are local
+  storage and UI safety limits, not claims about the AI Pass protocol. Do not
+  add AI Pass model identifiers to a source-code allowlist.
 - Revalidate a stored model against live discovery whenever it is selected or
   reactivated. Selecting AI Pass makes existing BYOK credentials inactive but
   leaves them connected; selecting BYOK makes AI Pass inactive. Existing

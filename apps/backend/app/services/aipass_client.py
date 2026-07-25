@@ -5,8 +5,10 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import json
+import unicodedata
 from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass, field
+from typing import TypeGuard
 
 import httpx
 from pydantic import SecretStr
@@ -145,16 +147,28 @@ async def request_bounded(
         raise AIPassUpstreamError() from None
 
 
+def _valid_model_id(value: object) -> TypeGuard[str]:
+    """Apply Lumen's storage/display safety bounds without rewriting an id."""
+    return (
+        isinstance(value, str)
+        and 0 < len(value.strip()) <= 128
+        # Reject C0/C1 controls and Unicode format controls (including bidi
+        # overrides). Accepted provider-prefixed ids are otherwise preserved
+        # byte-for-byte for catalog revalidation and upstream dispatch.
+        and not any(unicodedata.category(char) in {"Cc", "Cf"} for char in value)
+    )
+
+
 def parse_models(payload: object) -> list[AIPassModel]:
-    """Accept OpenAI ``{object:list,data:[...]}`` and legacy string arrays."""
+    """Accept the OpenAI list envelope and a legacy string-array migration shape."""
     if isinstance(payload, list):
-        if not all(isinstance(item, str) and 0 < len(item.strip()) <= 128 for item in payload):
+        if not all(_valid_model_id(item) for item in payload):
             raise AIPassProtocolError()
-        return [AIPassModel(id=item.strip(), name=item.strip()) for item in payload]
+        return [AIPassModel(id=item, name=item.strip()) for item in payload]
 
     if (
         not isinstance(payload, dict)
-        or payload.get("object", "list") != "list"
+        or payload.get("object") != "list"
         or not isinstance(payload.get("data"), list)
     ):
         raise AIPassProtocolError()
@@ -168,11 +182,11 @@ def parse_models(payload: object) -> list[AIPassModel]:
         methods = item.get("methods")
         if methods is not None and (
             not isinstance(methods, list)
-            or not all(isinstance(method, str) and method for method in methods)
+            or not all(isinstance(method, str) and method.strip() for method in methods)
         ):
             raise AIPassProtocolError()
         model_id = item.get("id")
-        if not isinstance(model_id, str) or not 0 < len(model_id.strip()) <= 128:
+        if not _valid_model_id(model_id):
             raise AIPassProtocolError()
         raw_name = item.get("name") or item.get("display_name") or model_id
         name = raw_name if isinstance(raw_name, str) and raw_name.strip() else model_id
@@ -180,7 +194,7 @@ def parse_models(payload: object) -> list[AIPassModel]:
             raise AIPassProtocolError()
         if methods is not None and "chat_completions" not in methods:
             continue
-        models.append(AIPassModel(id=model_id.strip(), name=name.strip()))
+        models.append(AIPassModel(id=model_id, name=name.strip()))
     return models
 
 
@@ -197,7 +211,6 @@ async def discover_models(
             http,
             "GET",
             AIPASS_MODELS_URL,
-            params={"detailed": "true"},
             headers={"Authorization": f"Bearer {access_token.get_secret_value()}"},
             max_bytes=int(get_settings().aipass_oauth_max_response_bytes),
         )
