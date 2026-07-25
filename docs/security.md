@@ -115,6 +115,28 @@ The H6 production guard refuses to boot with `LLM_PROVIDER=noop` so a
 demo that's accidentally pointed at the canned-text test provider
 can't ship.
 
+## AI Pass account connection
+
+AI Pass is an optional OAuth account connection, not an API-key field.
+FastAPI owns Authorization Code + PKCE S256, validates endpoints from the AI
+Pass authorization-server metadata, and binds callbacks to both one-time state
+and a short-lived HttpOnly browser nonce. The access token, refresh token, and
+PKCE verifier are envelope-encrypted in Postgres; browser JavaScript receives
+only connection status and live model metadata.
+
+Refresh-token rotation holds a row lock and persists the replacement encrypted
+bundle atomically. Disconnect attempts revocation and always clears local
+material. The worker receives only an opaque connection ID, never a bearer
+token. A user cancellation marks the durable turn aborted; the worker observes
+that state and cancels the active upstream response so shared-wallet spend is
+not allowed to continue after the UI stops.
+
+The integration is fail-closed behind `FEATURE_AIPASS_OAUTH_ENABLED`. It also
+requires the existing public client identifier from protected runtime
+configuration, an exact registered HTTPS callback URI, and the production KEK.
+No client identifier value or OAuth token is committed or returned in an
+application DTO. See [ADR-0032](adr/0032-aipass-oauth-account-connection.md).
+
 ## Production boot guards
 
 In addition to `Settings.assert_production_ready()` (dev-default

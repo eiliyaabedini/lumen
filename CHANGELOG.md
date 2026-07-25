@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Optional AI Pass account connection.** Learners can connect AI Pass with
+  Authorization Code + PKCE, choose from their live account model catalog, and
+  route foreground AI requests through their shared AI Pass wallet without
+  entering an API key. OAuth tokens and transport remain server-owned and
+  encrypted; refresh rotation is atomic, disconnect revokes and clears token
+  material, and cancelling a streamed turn closes the wallet-billed upstream
+  request. The feature is off until operators provide the existing public
+  client configuration and registered callback URI. See ADR-0032.
+
 - **Notifications are now feature-complete: delete, clear, mark-unread,
   a full inbox page, and an accurate badge.** Per-row kebab actions
   (delete, read/unread toggle) on an accessible row (real
