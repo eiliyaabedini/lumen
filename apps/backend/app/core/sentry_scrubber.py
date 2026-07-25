@@ -65,6 +65,41 @@ SCRUB_LOCALS: frozenset[str] = frozenset(
     }
 )
 
+AIPASS_SCRUB_LOCALS: frozenset[str] = frozenset(
+    {
+        "access",
+        "access_token",
+        "authorization_url",
+        "body",
+        "browser_nonce",
+        "client_id",
+        "code",
+        "current",
+        "data",
+        "headers",
+        "json_body",
+        "parts",
+        "payload",
+        "pkce",
+        "prior_refresh",
+        "prior_tokens",
+        "raw",
+        "refresh",
+        "refresh_token",
+        "request",
+        "response",
+        "rotated",
+        "start",
+        "state",
+        "token",
+        "tokens",
+        "userinfo",
+        "value",
+        "verifier",
+    }
+)
+_AIPASS_SOURCE_FILES = ("aipass_client.py", "aipass_oauth.py")
+
 # URL prefixes whose request body should not be captured.
 SCRUB_URL_PREFIXES: tuple[str, ...] = (
     "/api/v1/tutor",
@@ -76,12 +111,14 @@ REDACTED = "<scrubbed by lumen.sentry_scrubber>"
 
 
 def _scrub_frame_locals(frame: dict[str, Any]) -> None:
-    """Zero out any in-scope local with a tutor-namespace name."""
+    """Zero out tutor locals and secret-bearing AI Pass transport locals."""
     vars_ = frame.get("vars")
     if not isinstance(vars_, dict):
         return
+    filename = frame.get("filename")
+    aipass_frame = isinstance(filename, str) and filename.endswith(_AIPASS_SOURCE_FILES)
     for name in list(vars_.keys()):
-        if name in SCRUB_LOCALS:
+        if name in SCRUB_LOCALS or (aipass_frame and name in AIPASS_SCRUB_LOCALS):
             vars_[name] = REDACTED
 
 

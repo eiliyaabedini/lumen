@@ -416,7 +416,7 @@ async def post_message(
     # bucket as streaming) — a user can't stack a legacy + streaming
     # turn to dodge the limit.
     settings = get_settings()
-    ctx = await byok_service.resolve_context(db, user_id=user.id)
+    ctx = await byok_service.resolve_context(db, user_id=user.id, allow_aipass=True)
     # AI Pass has no platform-fallback consent path: its spend belongs to the
     # connected wallet, so the platform dollar reservation must not block it.
     # Preserve BYOK's existing reservation because it may consent-fallback.

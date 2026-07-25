@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Never
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Cookie, Query, Request, status
+from fastapi import APIRouter, Cookie, Request, status
 from fastapi.responses import RedirectResponse
 
 from app.api.deps import CurrentUser, DBSession
@@ -35,17 +35,7 @@ _LINK_COOKIE_DEV = "aipass_link"
 
 
 def _available() -> bool:
-    settings = get_settings()
-    secure_storage = bool(settings.byok_master_keys) or (
-        not settings.is_prod and settings.byok_allow_derived_kek
-    )
-    return bool(
-        settings.feature_aipass_oauth_enabled
-        and settings.aipass_oauth_client_id
-        and settings.aipass_oauth_client_id.get_secret_value()
-        and settings.aipass_oauth_redirect_uri
-        and secure_storage
-    )
+    return service.configuration_available()
 
 
 def _redirect_result(result: str) -> RedirectResponse:
@@ -155,14 +145,22 @@ async def connect(user: CurrentUser, db: DBSession, request: Request) -> Redirec
 )
 async def callback(
     db: DBSession,
-    state: str = Query(min_length=16, max_length=512),
-    code: str | None = Query(default=None, min_length=1, max_length=4096),
-    error: str | None = Query(default=None, max_length=128),
+    state: str | None = None,
+    code: str | None = None,
+    error: str | None = None,
     link_cookie_prod: str | None = Cookie(default=None, alias=_LINK_COOKIE_PROD),
     link_cookie_dev: str | None = Cookie(default=None, alias=_LINK_COOKIE_DEV),
 ) -> RedirectResponse:
     """Validate one-time state plus an HttpOnly browser-link nonce."""
     browser_nonce = link_cookie_prod or link_cookie_dev or ""
+    if state is None or not 16 <= len(state) <= 512 or not 1 <= len(browser_nonce) <= 512:
+        return _redirect_result("error")
+    if (code is not None and not 1 <= len(code) <= 4096) or (
+        error is not None and len(error) > 128
+    ):
+        await service.consume_state(db, state=state, browser_nonce=browser_nonce)
+        await db.commit()
+        return _redirect_result("error")
     if error is not None or code is None:
         await service.consume_state(
             db,
@@ -178,7 +176,6 @@ async def callback(
             code=code,
             browser_nonce=browser_nonce,
         )
-        await db.commit()
     except Exception:
         # Never reflect OAuth/provider errors, authorization codes, state, or
         # token responses into the redirect query or application error body.

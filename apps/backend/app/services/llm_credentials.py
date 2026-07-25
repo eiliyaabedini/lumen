@@ -15,6 +15,7 @@ body/key echo).
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,7 +30,7 @@ from app.core.errors import (
     ByokValidateRateLimitedError,
 )
 from app.core.logging import get_logger
-from app.models.aipass_connection import AIPassConnection
+from app.models.aipass_connection import AIPassConnection, AIPassOAuthTransaction
 from app.models.audit import AuditEvent
 from app.models.user import User
 from app.models.user_llm_credential import (
@@ -374,14 +375,13 @@ async def _run_validation(
 
 
 async def rotate_master_key(db: AsyncSession, *, batch_size: int = 200) -> tuple[int, int]:
-    """Re-wrap every credential's DEK under the active KEK version (FR-BYOK-12).
+    """Re-wrap all provider secret DEKs under the active KEK version.
 
     R-S2 operational procedure. Uses ``secrets_crypto.rotate_secret`` which
     re-wraps the ``enc_data_key`` ONLY — the inner ``enc_key`` (the encrypted
-    plaintext) is preserved byte-for-byte, so the plaintext key is never
-    touched or surfaced. Updates ``key_version`` to the active version. Emits
-    a single ``byok.master_key_rotated`` audit event (counts only). Returns
-    ``(rotated, skipped)``.
+    plaintext) is preserved byte-for-byte, so BYOK keys, AI Pass tokens, and
+    PKCE verifiers are never touched or surfaced. Updates ``key_version`` to
+    the active version. Emits one counts-only audit event.
 
     Precondition (R-S2): the target version KEK must be present in
     ``byok_master_keys`` (all versions deployed fleet-wide before rotation)
@@ -392,40 +392,42 @@ async def rotate_master_key(db: AsyncSession, *, batch_size: int = 200) -> tuple
     active_version = get_settings().byok_master_key_version
     rotated = 0
     skipped = 0
-    offset = 0
-    while True:
-        rows = (
-            (
-                await db.execute(
-                    select(UserLLMCredential)
-                    .order_by(UserLLMCredential.id)
-                    .offset(offset)
-                    .limit(batch_size)
+    secret_columns: tuple[tuple[type[Any], str], ...] = (
+        (UserLLMCredential, "enc_blob"),
+        (AIPassConnection, "enc_token_bundle"),
+        (AIPassOAuthTransaction, "enc_code_verifier"),
+    )
+    for model, encrypted_field in secret_columns:
+        offset = 0
+        while True:
+            rows = (
+                (
+                    await db.execute(
+                        select(model).order_by(model.id).offset(offset).limit(batch_size)
+                    )
                 )
+                .scalars()
+                .all()
             )
-            .scalars()
-            .all()
-        )
-        if not rows:
-            break
-        for cred in rows:
-            if cred.key_version == active_version:
-                skipped += 1
-                continue
-            # rotate_secret re-wraps enc_data_key under the active KEK; the
-            # inner enc_key (encrypted plaintext) is untouched.
-            cred.enc_blob = secrets_crypto.rotate_secret(cred.enc_blob)
-            cred.key_version = active_version
-            rotated += 1
-        await db.flush()
-        await db.commit()
-        offset += batch_size
+            if not rows:
+                break
+            for row in rows:
+                if row.key_version == active_version:
+                    skipped += 1
+                    continue
+                encrypted = getattr(row, encrypted_field)
+                setattr(row, encrypted_field, secrets_crypto.rotate_secret(encrypted))
+                row.key_version = active_version
+                rotated += 1
+            await db.flush()
+            await db.commit()
+            offset += batch_size
 
     await audit_repo.record(
         db,
         actor_id=None,
         action="byok.master_key_rotated",
-        target_type="user_llm_credential",
+        target_type="encrypted_provider_secret",
         target_id=None,
         data={"rotated": rotated, "skipped": skipped, "to_version": active_version},
     )

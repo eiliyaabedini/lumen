@@ -106,12 +106,18 @@ def _aipass_enabled() -> bool:
     return bool(getattr(get_settings(), "feature_aipass_oauth_enabled", False))
 
 
-async def resolve_context(db: AsyncSession, *, user_id: str | None) -> LLMContext:
+async def resolve_context(
+    db: AsyncSession,
+    *,
+    user_id: str | None,
+    allow_aipass: bool = False,
+) -> LLMContext:
     """Resolve the foreground user-funded context for ``user_id`` (NO decrypt).
 
-    An active AI Pass account takes precedence over BYOK because selection
-    deactivates the other source. The context carries only an opaque database
-    id; bearer/API-key material remains inside the server dispatch boundary.
+    When ``allow_aipass`` is true, an active AI Pass account takes precedence
+    over BYOK because selection deactivates the other source. The context
+    carries only an opaque database id; bearer/API-key material remains inside
+    the server dispatch boundary.
 
     When both optional integrations are off, or there is no acting user, the
     result resolves to platform.
@@ -119,7 +125,7 @@ async def resolve_context(db: AsyncSession, *, user_id: str | None) -> LLMContex
     if not user_id or user_id == SYSTEM_USER_ID:
         return LLMContext(user_id=user_id, credential_id=None, foreground=True, mode="platform")
 
-    if _aipass_enabled():
+    if allow_aipass and _aipass_enabled():
         from app.services import aipass_oauth
 
         connection = await aipass_oauth.get_active_connection(db, user_id=user_id)
@@ -155,18 +161,20 @@ async def build_provider(db: AsyncSession, ctx: LLMContext) -> tuple[LLMProvider
         - otherwise decrypt the key once and build the registry-fixed
           provider with the user's model → billing_mode="byok".
     """
-    if not ctx.foreground:
-        return llm_service.get_provider(), BILLING_PLATFORM
-
-    if ctx.aipass_connection_id and _aipass_enabled() and ctx.user_id:
+    if ctx.aipass_connection_id:
         from app.services import aipass_oauth
 
+        if not ctx.foreground or not ctx.user_id:
+            raise aipass_oauth.AIPassConfigurationError("Invalid AI Pass dispatch context.")
         aipass_provider = await aipass_oauth.build_provider(
             db,
             connection_id=ctx.aipass_connection_id,
             user_id=ctx.user_id,
         )
         return aipass_provider, BILLING_AIPASS
+
+    if not ctx.foreground:
+        return llm_service.get_provider(), BILLING_PLATFORM
 
     if not ctx.credential_id or not _byok_enabled():
         return llm_service.get_provider(), BILLING_PLATFORM

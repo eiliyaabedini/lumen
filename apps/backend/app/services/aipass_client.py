@@ -111,12 +111,12 @@ async def read_json_bounded(
                 body = await _read_response_bytes(response, max_bytes=max_bytes)
                 if response.status_code >= 400:
                     raise AIPassUpstreamError(status_code=response.status_code)
-    except (TimeoutError, httpx.HTTPError) as exc:
-        raise AIPassUpstreamError() from exc
+    except (TimeoutError, httpx.HTTPError):
+        raise AIPassUpstreamError() from None
     try:
         return json.loads(body)
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise AIPassProtocolError() from exc
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        raise AIPassProtocolError() from None
 
 
 async def request_bounded(
@@ -141,8 +141,8 @@ async def request_bounded(
                 if response.status_code >= 400:
                     raise AIPassUpstreamError(status_code=response.status_code)
                 return body
-    except (TimeoutError, httpx.HTTPError) as exc:
-        raise AIPassUpstreamError() from exc
+    except (TimeoutError, httpx.HTTPError):
+        raise AIPassUpstreamError() from None
 
 
 def parse_models(payload: object) -> list[AIPassModel]:
@@ -165,6 +165,12 @@ def parse_models(payload: object) -> list[AIPassModel]:
     for item in data:
         if not isinstance(item, dict):
             raise AIPassProtocolError()
+        methods = item.get("methods")
+        if methods is not None and (
+            not isinstance(methods, list)
+            or not all(isinstance(method, str) and method for method in methods)
+        ):
+            raise AIPassProtocolError()
         model_id = item.get("id")
         if not isinstance(model_id, str) or not 0 < len(model_id.strip()) <= 128:
             raise AIPassProtocolError()
@@ -172,6 +178,8 @@ def parse_models(payload: object) -> list[AIPassModel]:
         name = raw_name if isinstance(raw_name, str) and raw_name.strip() else model_id
         if len(name.strip()) > 256:
             raise AIPassProtocolError()
+        if methods is not None and "chat_completions" not in methods:
+            continue
         models.append(AIPassModel(id=model_id.strip(), name=name.strip()))
     return models
 
@@ -386,8 +394,8 @@ class AIPassProvider:
                             yield chunk
                         return
                 raise AIPassUpstreamError(status_code=401)
-        except (TimeoutError, httpx.HTTPError) as exc:
-            raise AIPassUpstreamError() from exc
+        except (TimeoutError, httpx.HTTPError):
+            raise AIPassUpstreamError() from None
         finally:
             if owned:
                 await client.aclose()
@@ -449,7 +457,7 @@ async def _parse_sse(response: httpx.Response) -> AsyncIterator[AIPassStreamChun
                     return
     if buffer.strip():
         raise AIPassProtocolError()
-    yield AIPassStreamChunk(done=True, usage=usage)
+    raise AIPassProtocolError()
 
 
 __all__ = [

@@ -242,7 +242,11 @@ async def post_turn(
         # boundary. Resolved BEFORE the dollar reservation (Gate-A fix): a
         # BYOK turn pays the user's own provider, so it must neither consume
         # nor be blocked by platform cost buckets (charter decision 5).
-        byok_ctx = await byok_service.resolve_context(db, user_id=user.id)
+        byok_ctx = await byok_service.resolve_context(
+            db,
+            user_id=user.id,
+            allow_aipass=True,
+        )
 
         if byok_ctx.credential_id is not None or byok_ctx.aipass_connection_id is not None:
             # Non-dollar BYOK request windows at enqueue (ADR-0027 §5).

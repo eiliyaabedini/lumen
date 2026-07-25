@@ -1298,7 +1298,8 @@ export const ar: Record<MessageKey, string> = {
 
   // AI Pass — اتصال حساب OAuth اختياري
   "aipass.title": "ربط AI Pass",
-  "aipass.description": "اربط حساب AI Pass لاستخدام محفظته المشتركة — من دون مفتاح API.",
+  "aipass.description":
+    "اربط حساب AI Pass لطلبات المدرّس باستخدام محفظته المشتركة — من دون مفتاح API.",
   "aipass.connect": "ربط AI Pass",
   "aipass.connected": "متصل",
   "aipass.connectedNow": "تم ربط AI Pass.",
@@ -1307,7 +1308,7 @@ export const ar: Record<MessageKey, string> = {
   "aipass.reconnectAction": "إعادة ربط AI Pass",
   "aipass.disconnect": "فصل AI Pass",
   "aipass.disconnected": "تم فصل AI Pass.",
-  "aipass.active": "استخدمه لطلباتي",
+  "aipass.active": "استخدمه لطلبات المدرّس",
   "aipass.model": "نموذج AI Pass",
   "aipass.modelChoose": "اختر نموذجًا",
   "aipass.modelsLoading": "جارٍ تحميل النماذج المباشرة…",

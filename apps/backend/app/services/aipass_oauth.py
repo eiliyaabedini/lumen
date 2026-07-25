@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core import secrets_crypto
 from app.core.config import Environment, get_settings
+from app.core.prod_guards import _has_real_kek
 from app.db.base import get_sessionmaker
 from app.models.aipass_connection import (
     AIPASS_STATUS_CONNECTED,
@@ -58,19 +59,25 @@ class AIPassReauthRequired(AIPassUpstreamError):
     """Refresh failed and the user must reconnect their AI Pass account."""
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, repr=False)
 class PKCEValues:
     state: str
     verifier: str
     challenge: str
 
+    def __repr__(self) -> str:
+        return "PKCEValues(<redacted>)"
 
-@dataclass(frozen=True)
+
+@dataclass(frozen=True, repr=False)
 class OAuthStart:
     authorization_url: str
     state: str
     verifier: str
     browser_nonce: str
+
+    def __repr__(self) -> str:
+        return "OAuthStart(<redacted>)"
 
 
 @dataclass(frozen=True)
@@ -118,7 +125,7 @@ def _client_id() -> str:
     if settings.aipass_oauth_client_id is None:
         raise AIPassConfigurationError("AI Pass client configuration is missing.")
     value = settings.aipass_oauth_client_id.get_secret_value()
-    if not value:
+    if not value or len(value) > 512:
         raise AIPassConfigurationError("AI Pass client configuration is missing.")
     return value
 
@@ -144,15 +151,28 @@ def _redirect_uri() -> str:
     return rendered
 
 
-def _require_secure_storage() -> None:
-    """Refuse real OAuth material under a derived KEK unless dev opted in."""
+def _secure_storage_available() -> bool:
     settings = get_settings()
-    real = bool(settings.byok_master_keys)
-    if real:
-        return
-    if settings.env != Environment.production and settings.byok_allow_derived_kek:
-        return
-    raise AIPassConfigurationError("Secure token storage is not configured for AI Pass.")
+    return _has_real_kek(settings) or (
+        settings.env != Environment.production and settings.byok_allow_derived_kek
+    )
+
+
+def _require_secure_storage() -> None:
+    """Refuse OAuth material unless the active KEK is usable or dev opted in."""
+    if not _secure_storage_available():
+        raise AIPassConfigurationError("Secure token storage is not configured for AI Pass.")
+
+
+def configuration_available() -> bool:
+    """Return whether every local prerequisite for safe AI Pass use is present."""
+    try:
+        _require_secure_storage()
+        _client_id()
+        _redirect_uri()
+    except AIPassConfigurationError:
+        return False
+    return True
 
 
 def _validate_endpoint(url: object) -> str:
@@ -404,6 +424,17 @@ def _decode_bundle(connection: AIPassConnection) -> TokenSet:
         raise AIPassProtocolError("Stored AI Pass connection is unreadable.") from exc
 
 
+async def _revoke_token_set_best_effort(tokens: TokenSet) -> None:
+    for token, hint in (
+        (tokens.refresh_token, "refresh_token"),
+        (tokens.access_token, "access_token"),
+    ):
+        # Revocation is best-effort, including when the request that initiated
+        # cleanup is cancelled. Local encrypted material must still be cleared.
+        with contextlib.suppress(Exception, asyncio.CancelledError):
+            await revoke_token(token, token_type_hint=hint)
+
+
 async def store_connection(
     db: AsyncSession,
     *,
@@ -450,7 +481,7 @@ async def complete_connection(
     code: str,
     browser_nonce: str,
 ) -> AIPassConnection:
-    """Consume state before exchange, validate userinfo, then encrypt tokens."""
+    """Consume state, exchange, and atomically persist the issued grant."""
     if (
         not state
         or len(state) > 512
@@ -476,43 +507,100 @@ async def complete_connection(
     if tx is None:
         raise AIPassOAuthStateError("Invalid or expired OAuth state.")
     verifier = secrets_crypto.decrypt(tx.enc_code_verifier).decode()
+    transaction_id = tx.id
+    user_id = tx.user_id
     tx.consumed_at = now
     await db.commit()  # one-time even if the external exchange fails
 
-    tokens = await exchange_code(code=code, verifier=verifier)
+    tokens: TokenSet | None = None
+    prior_tokens: TokenSet | None = None
     try:
+        tokens = await exchange_code(code=code, verifier=verifier)
         userinfo = await fetch_userinfo(tokens.access_token)
-        return await store_connection(
+        # start_connection and disconnect use the same user-row lock. If
+        # either invalidated this transaction while the network exchange was
+        # in flight, reject the newly-issued grant rather than reconnecting.
+        await db.execute(select(User.id).where(User.id == user_id).with_for_update())
+        live_transaction = (
+            await db.execute(
+                select(AIPassOAuthTransaction)
+                .where(
+                    AIPassOAuthTransaction.id == transaction_id,
+                    AIPassOAuthTransaction.consumed_at.is_not(None),
+                )
+                .with_for_update()
+            )
+        ).scalar_one_or_none()
+        if live_transaction is None:
+            raise AIPassOAuthStateError("OAuth connection was cancelled.")
+
+        prior_connection = (
+            await db.execute(
+                select(AIPassConnection)
+                .where(AIPassConnection.user_id == user_id)
+                .with_for_update()
+            )
+        ).scalar_one_or_none()
+        if prior_connection is not None:
+            with contextlib.suppress(AIPassProtocolError):
+                prior_tokens = _decode_bundle(prior_connection)
+
+        connection = await store_connection(
             db,
-            user_id=tx.user_id,
+            user_id=user_id,
             subject=_subject(userinfo),
             tokens=tokens,
         )
-    except Exception:
+        await db.execute(
+            delete(AIPassOAuthTransaction).where(AIPassOAuthTransaction.id == transaction_id)
+        )
+        # The service owns this commit because a route-level commit failure
+        # after return would strand an issued, unrevoked grant.
+        await db.commit()
+    except BaseException:
+        with contextlib.suppress(Exception):
+            await db.rollback()
+        # Purge the consumed verifier even when exchange, userinfo, or final
+        # persistence fails. A concurrent start may already have removed it.
+        with contextlib.suppress(Exception, asyncio.CancelledError):
+            await db.execute(
+                delete(AIPassOAuthTransaction).where(AIPassOAuthTransaction.id == transaction_id)
+            )
+            await db.commit()
         # The authorization code has already been consumed. If identity
         # binding or local persistence fails, do not leave the newly-issued
         # grant live: revoke both tokens best-effort before failing closed.
-        for token, hint in (
-            (tokens.refresh_token, "refresh_token"),
-            (tokens.access_token, "access_token"),
-        ):
-            with contextlib.suppress(Exception):
-                await revoke_token(token, token_type_hint=hint)
+        if tokens is not None:
+            await _revoke_token_set_best_effort(tokens)
         raise
+
+    # A reconnect replaces the encrypted bundle. Revoke the superseded grant
+    # after the new one is durable so it cannot become an untracked live grant.
+    if prior_tokens is not None:
+        replacement_values = {
+            tokens.refresh_token.get_secret_value(),
+            tokens.access_token.get_secret_value(),
+        }
+        for token, hint in (
+            (prior_tokens.refresh_token, "refresh_token"),
+            (prior_tokens.access_token, "access_token"),
+        ):
+            if token.get_secret_value() not in replacement_values:
+                with contextlib.suppress(Exception, asyncio.CancelledError):
+                    await revoke_token(token, token_type_hint=hint)
+    return connection
 
 
 async def consume_state(db: AsyncSession, *, state: str, browser_nonce: str) -> None:
-    """Consume an OAuth transaction after provider denial/cancel."""
+    """Delete an OAuth transaction after provider denial/cancel."""
     if not state or len(state) > 512 or not browser_nonce or len(browser_nonce) > 512:
         return
     await db.execute(
-        update(AIPassOAuthTransaction)
-        .where(
+        delete(AIPassOAuthTransaction).where(
             AIPassOAuthTransaction.state_hash == _state_hash(state),
             AIPassOAuthTransaction.browser_nonce_hash == _state_hash(browser_nonce),
             AIPassOAuthTransaction.consumed_at.is_(None),
         )
-        .values(consumed_at=datetime.now(UTC))
     )
 
 
@@ -570,12 +658,38 @@ async def get_valid_access_token(
             row.is_active = False
             await db.commit()
             raise AIPassReauthRequired("Reconnect AI Pass.", status_code=401) from exc
-        row.enc_token_bundle = secrets_crypto.encrypt(_bundle_bytes(rotated))
-        row.key_version = get_settings().byok_master_key_version
-        row.token_expires_at = rotated.expires_at
-        row.scope = rotated.scope
-        await db.commit()
-        return rotated.access_token
+        try:
+            row.enc_token_bundle = secrets_crypto.encrypt(_bundle_bytes(rotated))
+            row.key_version = get_settings().byok_master_key_version
+            row.token_expires_at = rotated.expires_at
+            row.scope = rotated.scope
+            await db.commit()
+            return rotated.access_token
+        except BaseException as exc:
+            with contextlib.suppress(Exception):
+                await db.rollback()
+            await _revoke_token_set_best_effort(rotated)
+            # The upstream may have invalidated the prior refresh token. Mark
+            # the local connection unusable in a fresh transaction; a second
+            # commit failure remains fail-closed to the caller.
+            with contextlib.suppress(Exception, asyncio.CancelledError):
+                fresh = (
+                    await db.execute(
+                        select(AIPassConnection)
+                        .where(
+                            AIPassConnection.id == connection_id,
+                            AIPassConnection.user_id == user_id,
+                        )
+                        .with_for_update()
+                    )
+                ).scalar_one_or_none()
+                if fresh is not None:
+                    fresh.status = AIPASS_STATUS_REAUTH_REQUIRED
+                    fresh.is_active = False
+                await db.commit()
+            if isinstance(exc, asyncio.CancelledError):
+                raise
+            raise AIPassReauthRequired("Reconnect AI Pass.", status_code=401) from None
 
 
 async def _mark_reauth_required(
@@ -683,6 +797,11 @@ async def build_provider(
     user_id: str,
     token_session_factory: async_sessionmaker[AsyncSession] | None = None,
 ) -> AIPassProvider:
+    # A context may outlive a feature/configuration change between enqueue and
+    # dispatch. Never turn a wallet-funded context into platform-funded work.
+    _require_secure_storage()
+    _client_id()
+    _redirect_uri()
     connection = (
         await db.execute(
             select(AIPassConnection).where(
@@ -740,8 +859,21 @@ async def revoke_token(token: SecretStr, *, token_type_hint: str) -> None:
 
 
 async def disconnect(db: AsyncSession, *, user_id: str) -> None:
-    connection = await get_connection(db, user_id=user_id)
+    # Serialize with start/final callback persistence, and invalidate any
+    # callback that is still exchanging its code.
+    await db.execute(select(User.id).where(User.id == user_id).with_for_update())
+    await db.execute(
+        delete(AIPassOAuthTransaction).where(AIPassOAuthTransaction.user_id == user_id)
+    )
+    # Serialize with refresh rotation so revocation sees the latest rotated
+    # bundle, not a refresh token that has already been superseded.
+    connection = (
+        await db.execute(
+            select(AIPassConnection).where(AIPassConnection.user_id == user_id).with_for_update()
+        )
+    ).scalar_one_or_none()
     if connection is None:
+        await db.flush()
         return
     try:
         tokens = _decode_bundle(connection)
@@ -750,12 +882,7 @@ async def disconnect(db: AsyncSession, *, user_id: str) -> None:
     # Revoke both independently, but clearing local token material is
     # unconditional and wins over network or local-decryption failure.
     if tokens is not None:
-        for token, hint in (
-            (tokens.refresh_token, "refresh_token"),
-            (tokens.access_token, "access_token"),
-        ):
-            with contextlib.suppress(Exception):
-                await revoke_token(token, token_type_hint=hint)
+        await _revoke_token_set_best_effort(tokens)
     await db.execute(delete(AIPassConnection).where(AIPassConnection.id == connection.id))
     await db.flush()
 
@@ -773,6 +900,7 @@ __all__ = [
     "base64url_sha256",
     "build_provider",
     "complete_connection",
+    "configuration_available",
     "consume_state",
     "disconnect",
     "exchange_code",

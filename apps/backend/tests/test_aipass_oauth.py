@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from urllib.parse import parse_qs, urlparse
@@ -24,7 +25,7 @@ from app.core.config import get_settings
 from app.db.base import get_sessionmaker
 from app.models.aipass_connection import AIPassConnection, AIPassOAuthTransaction
 from app.models.llm_call import BILLING_AIPASS
-from app.models.tutor_turn_job import TURN_STATUS_ABORTED
+from app.models.tutor_turn_job import TURN_STATUS_ABORTED, TutorTurnJob
 from app.services import aipass_oauth, byok
 from app.services.aipass_client import AIPassModel, AIPassProvider
 from app.services.tutor_turn_service import create_turn
@@ -74,6 +75,30 @@ def test_pkce_is_s256_and_state_is_strong() -> None:
     assert "=" not in first.challenge
 
 
+def test_oauth_start_values_have_redacting_representations() -> None:
+    pkce = aipass_oauth.PKCEValues(
+        state="state-sentinel",
+        verifier="verifier-sentinel",
+        challenge="challenge-sentinel",
+    )
+    start = aipass_oauth.OAuthStart(
+        authorization_url="https://aipass.one/oauth2/authorize?client_id=client-sentinel",
+        state="state-sentinel",
+        verifier="verifier-sentinel",
+        browser_nonce="browser-sentinel",
+    )
+
+    rendered = f"{pkce!r} {start!r}"
+    for sentinel in (
+        "state-sentinel",
+        "verifier-sentinel",
+        "challenge-sentinel",
+        "client-sentinel",
+        "browser-sentinel",
+    ):
+        assert sentinel not in rendered
+
+
 async def test_connect_endpoint_redirects_with_http_only_browser_binding(
     client, auth_headers, monkeypatch
 ) -> None:
@@ -114,6 +139,23 @@ async def test_connect_endpoint_redirects_with_http_only_browser_binding(
     assert callback.headers["cache-control"] == "no-store"
     assert callback.headers["referrer-policy"] == "no-referrer"
     assert "aipass=error" in callback.headers["location"]
+
+
+async def test_callback_rejects_malformed_sensitive_input_without_reflection(client) -> None:
+    response = await client.get(
+        "/api/v1/aipass/oauth/callback",
+        params={
+            "state": "tiny-state",
+            "code": "authorization-code-sentinel",
+        },
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert "aipass=error" in response.headers["location"]
+    assert "authorization-code-sentinel" not in response.headers["location"]
+    assert "authorization-code-sentinel" not in response.text
+    assert "tiny-state" not in response.text
 
 
 async def test_start_connect_keeps_verifier_server_side(db_session, make_user, monkeypatch) -> None:
@@ -168,10 +210,14 @@ async def test_live_selected_connection_drives_aipass_context(
         model="live-selected-model",
     )
     await db_session.commit()
+    connection_id = connection.id
 
-    ctx = await byok.resolve_context(db_session, user_id=user.id)
+    default_ctx = await byok.resolve_context(db_session, user_id=user.id)
+    assert default_ctx.aipass_connection_id is None
+
+    ctx = await byok.resolve_context(db_session, user_id=user.id, allow_aipass=True)
     assert ctx.mode == BILLING_AIPASS
-    assert ctx.aipass_connection_id == connection.id
+    assert ctx.aipass_connection_id == connection_id
     assert ctx.credential_id is None
 
     provider, billing_mode = await byok.build_provider(db_session, ctx)
@@ -179,6 +225,65 @@ async def test_live_selected_connection_drives_aipass_context(
     assert provider.name == "aipass"
     assert billing_mode == BILLING_AIPASS
     assert "context-access-token" not in repr(provider)
+
+
+async def test_resolved_aipass_context_fails_closed_if_feature_is_disabled(
+    db_session, make_user, monkeypatch
+) -> None:
+    _enable(monkeypatch)
+    user = await make_user(email="aipass-disable-race@lumen.test")
+    connection = await aipass_oauth.store_connection(
+        db_session,
+        user_id=user.id,
+        subject="disable-race-subject",
+        tokens=aipass_oauth.TokenSet(
+            access_token=SecretStr("disable-race-access"),
+            refresh_token=SecretStr("disable-race-refresh"),
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
+            scope="api:access",
+        ),
+    )
+    connection.model = "live-model"
+    connection.is_active = True
+    await db_session.commit()
+
+    ctx = await byok.resolve_context(db_session, user_id=user.id, allow_aipass=True)
+    monkeypatch.setenv("FEATURE_AIPASS_OAUTH_ENABLED", "false")
+    get_settings.cache_clear()
+
+    with pytest.raises(aipass_oauth.AIPassConfigurationError):
+        await byok.build_provider(db_session, ctx)
+
+
+async def test_malformed_aipass_context_never_falls_through_to_platform(db_session) -> None:
+    ctx = byok.LLMContext(
+        user_id=None,
+        aipass_connection_id="opaque-connection-id",
+        foreground=False,
+        mode=BILLING_AIPASS,
+    )
+
+    with pytest.raises(aipass_oauth.AIPassConfigurationError):
+        await byok.build_provider(db_session, ctx)
+
+
+async def test_invalid_kek_map_does_not_enable_oauth_storage(
+    db_session, make_user, monkeypatch
+) -> None:
+    user = await make_user(email="aipass-invalid-kek@lumen.test")
+    monkeypatch.setenv("FEATURE_AIPASS_OAUTH_ENABLED", "true")
+    monkeypatch.setenv("AIPASS_OAUTH_CLIENT_ID", "configured-client")
+    monkeypatch.setenv(
+        "AIPASS_OAUTH_REDIRECT_URI",
+        "http://localhost:8000/api/v1/aipass/oauth/callback",
+    )
+    monkeypatch.setenv("BYOK_MASTER_KEYS", '{"1":""}')
+    monkeypatch.setenv("BYOK_ALLOW_DERIVED_KEK", "false")
+    get_settings.cache_clear()
+    secrets_crypto.reset_for_tests()
+
+    with pytest.raises(aipass_oauth.AIPassConfigurationError):
+        await aipass_oauth.start_connection(db_session, user_id=user.id)
 
 
 async def test_reactivation_revalidates_the_stored_model_live(
@@ -281,6 +386,190 @@ async def test_callback_encrypts_tokens_and_state_is_one_time(
         )
 
 
+async def test_complete_connection_commits_issued_grant_before_return(
+    db_session, make_user, monkeypatch
+) -> None:
+    _enable(monkeypatch)
+    user = await make_user(email="aipass-callback-commit@lumen.test")
+    start = await aipass_oauth.start_connection(db_session, user_id=user.id)
+    await db_session.commit()
+
+    async def fake_exchange(*, code: str, verifier: str) -> aipass_oauth.TokenSet:
+        del code, verifier
+        return aipass_oauth.TokenSet(
+            access_token=SecretStr("commit-access"),
+            refresh_token=SecretStr("commit-refresh"),
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
+            scope="api:access",
+        )
+
+    async def fake_userinfo(_access_token: SecretStr) -> dict[str, object]:
+        return {"sub": "commit-subject"}
+
+    monkeypatch.setattr(aipass_oauth, "exchange_code", fake_exchange)
+    monkeypatch.setattr(aipass_oauth, "fetch_userinfo", fake_userinfo)
+
+    await aipass_oauth.complete_connection(
+        db_session,
+        state=start.state,
+        code="authorization-code",
+        browser_nonce=start.browser_nonce,
+    )
+
+    async with get_sessionmaker()() as observer:
+        persisted = (
+            await observer.execute(
+                select(AIPassConnection).where(AIPassConnection.user_id == user.id)
+            )
+        ).scalar_one_or_none()
+    assert persisted is not None
+
+
+async def test_callback_commit_failure_revokes_issued_grant(
+    db_session, make_user, monkeypatch
+) -> None:
+    _enable(monkeypatch)
+    user = await make_user(email="aipass-callback-commit-failure@lumen.test")
+    user_id = user.id
+    start = await aipass_oauth.start_connection(db_session, user_id=user.id)
+    await db_session.commit()
+    revoked: list[str] = []
+
+    async def fake_exchange(*, code: str, verifier: str) -> aipass_oauth.TokenSet:
+        del code, verifier
+        return aipass_oauth.TokenSet(
+            access_token=SecretStr("failed-commit-access"),
+            refresh_token=SecretStr("failed-commit-refresh"),
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
+            scope="api:access",
+        )
+
+    async def fake_userinfo(_access_token: SecretStr) -> dict[str, object]:
+        return {"sub": "failed-commit-subject"}
+
+    async def fake_revoke(token: SecretStr, *, token_type_hint: str) -> None:
+        del token_type_hint
+        revoked.append(token.get_secret_value())
+
+    real_commit = db_session.commit
+    commit_calls = 0
+
+    async def fail_final_commit() -> None:
+        nonlocal commit_calls
+        commit_calls += 1
+        if commit_calls == 2:
+            raise RuntimeError("simulated commit failure")
+        await real_commit()
+
+    monkeypatch.setattr(aipass_oauth, "exchange_code", fake_exchange)
+    monkeypatch.setattr(aipass_oauth, "fetch_userinfo", fake_userinfo)
+    monkeypatch.setattr(aipass_oauth, "revoke_token", fake_revoke)
+    monkeypatch.setattr(db_session, "commit", fail_final_commit)
+
+    with pytest.raises(RuntimeError, match="simulated commit failure"):
+        await aipass_oauth.complete_connection(
+            db_session,
+            state=start.state,
+            code="authorization-code",
+            browser_nonce=start.browser_nonce,
+        )
+
+    assert revoked == ["failed-commit-refresh", "failed-commit-access"]
+    async with get_sessionmaker()() as observer:
+        persisted = (
+            await observer.execute(
+                select(AIPassConnection).where(AIPassConnection.user_id == user_id)
+            )
+        ).scalar_one_or_none()
+    assert persisted is None
+
+
+async def test_failed_exchange_purges_consumed_pkce_verifier(
+    db_session, make_user, monkeypatch
+) -> None:
+    _enable(monkeypatch)
+    user = await make_user(email="aipass-exchange-failure@lumen.test")
+    start = await aipass_oauth.start_connection(db_session, user_id=user.id)
+    await db_session.commit()
+
+    async def failed_exchange(*, code: str, verifier: str) -> aipass_oauth.TokenSet:
+        del code, verifier
+        raise aipass_oauth.AIPassUpstreamError()
+
+    monkeypatch.setattr(aipass_oauth, "exchange_code", failed_exchange)
+
+    with pytest.raises(aipass_oauth.AIPassUpstreamError):
+        await aipass_oauth.complete_connection(
+            db_session,
+            state=start.state,
+            code="authorization-code",
+            browser_nonce=start.browser_nonce,
+        )
+
+    async with get_sessionmaker()() as observer:
+        transaction = (
+            await observer.execute(
+                select(AIPassOAuthTransaction).where(AIPassOAuthTransaction.user_id == user.id)
+            )
+        ).scalar_one_or_none()
+    assert transaction is None
+
+
+async def test_reconnect_revokes_the_replaced_grant(db_session, make_user, monkeypatch) -> None:
+    _enable(monkeypatch)
+    user = await make_user(email="aipass-reconnect-revoke@lumen.test")
+    await aipass_oauth.store_connection(
+        db_session,
+        user_id=user.id,
+        subject="reconnect-subject",
+        tokens=aipass_oauth.TokenSet(
+            access_token=SecretStr("replaced-access"),
+            refresh_token=SecretStr("replaced-refresh"),
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
+            scope="api:access",
+        ),
+    )
+    start = await aipass_oauth.start_connection(db_session, user_id=user.id)
+    await db_session.commit()
+    revoked: list[str] = []
+
+    async def fake_exchange(*, code: str, verifier: str) -> aipass_oauth.TokenSet:
+        del code, verifier
+        return aipass_oauth.TokenSet(
+            access_token=SecretStr("replacement-access"),
+            refresh_token=SecretStr("replacement-refresh"),
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
+            scope="api:access",
+        )
+
+    async def fake_userinfo(_access_token: SecretStr) -> dict[str, object]:
+        return {"sub": "reconnect-subject"}
+
+    async def fake_revoke(token: SecretStr, *, token_type_hint: str) -> None:
+        del token_type_hint
+        revoked.append(token.get_secret_value())
+
+    monkeypatch.setattr(aipass_oauth, "exchange_code", fake_exchange)
+    monkeypatch.setattr(aipass_oauth, "fetch_userinfo", fake_userinfo)
+    monkeypatch.setattr(aipass_oauth, "revoke_token", fake_revoke)
+
+    await aipass_oauth.complete_connection(
+        db_session,
+        state=start.state,
+        code="authorization-code",
+        browser_nonce=start.browser_nonce,
+    )
+
+    assert revoked == ["replaced-refresh", "replaced-access"]
+    connection = (
+        await db_session.execute(
+            select(AIPassConnection).where(AIPassConnection.user_id == user.id)
+        )
+    ).scalar_one()
+    bundle = json.loads(secrets_crypto.decrypt(connection.enc_token_bundle))
+    assert bundle["refresh_token"] == "replacement-refresh"
+
+
 async def test_refresh_rotation_replaces_bundle_atomically(
     db_session, make_user, monkeypatch
 ) -> None:
@@ -330,6 +619,81 @@ async def test_refresh_rotation_replaces_bundle_atomically(
     rotated = json.loads(secrets_crypto.decrypt(fresh.enc_token_bundle))
     assert rotated["refresh_token"] == "rotated-refresh-token"
     assert "old-refresh-token" not in json.dumps(rotated)
+
+
+async def test_refresh_commit_failure_revokes_rotation_and_requires_reauth(
+    db_session, make_user, monkeypatch
+) -> None:
+    _enable(monkeypatch)
+    user = await make_user(email="aipass-refresh-commit-failure@lumen.test")
+    connection = await aipass_oauth.store_connection(
+        db_session,
+        user_id=user.id,
+        subject="refresh-commit-failure-subject",
+        tokens=aipass_oauth.TokenSet(
+            access_token=SecretStr("pre-failure-access"),
+            refresh_token=SecretStr("pre-failure-refresh"),
+            expires_at=datetime.now(UTC) - timedelta(minutes=1),
+            scope="api:access",
+        ),
+    )
+    await db_session.commit()
+    connection_id = connection.id
+    revoked: list[str] = []
+
+    async def fake_refresh(_refresh_token: SecretStr) -> aipass_oauth.TokenSet:
+        return aipass_oauth.TokenSet(
+            access_token=SecretStr("unpersisted-access"),
+            refresh_token=SecretStr("unpersisted-refresh"),
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
+            scope="api:access",
+        )
+
+    async def fake_revoke(token: SecretStr, *, token_type_hint: str) -> None:
+        del token_type_hint
+        revoked.append(token.get_secret_value())
+
+    @asynccontextmanager
+    async def failing_session():
+        async with get_sessionmaker()() as session:
+            real_commit = session.commit
+            commit_calls = 0
+
+            async def fail_rotation_commit() -> None:
+                nonlocal commit_calls
+                commit_calls += 1
+                if commit_calls == 1:
+                    raise RuntimeError("simulated rotation commit failure")
+                await real_commit()
+
+            monkeypatch.setattr(session, "commit", fail_rotation_commit)
+            yield session
+
+    def failing_session_factory():
+        return failing_session()
+
+    monkeypatch.setattr(aipass_oauth, "refresh_tokens", fake_refresh)
+    monkeypatch.setattr(aipass_oauth, "revoke_token", fake_revoke)
+
+    with pytest.raises(aipass_oauth.AIPassReauthRequired):
+        await aipass_oauth.get_valid_access_token(
+            connection_id=connection_id,
+            user_id=user.id,
+            force_refresh=True,
+            session_factory=failing_session_factory,  # type: ignore[arg-type]
+        )
+
+    assert revoked == ["unpersisted-refresh", "unpersisted-access"]
+    db_session.expire_all()
+    fresh = (
+        await db_session.execute(
+            select(AIPassConnection).where(AIPassConnection.id == connection_id)
+        )
+    ).scalar_one()
+    assert fresh.status == "reauth_required"
+    assert fresh.is_active is False
+    bundle = json.loads(secrets_crypto.decrypt(fresh.enc_token_bundle))
+    assert bundle["refresh_token"] == "pre-failure-refresh"
 
 
 async def test_refresh_request_uses_public_client_json(monkeypatch) -> None:
@@ -412,6 +776,137 @@ async def test_repeated_models_401_marks_connection_for_reauth(
     assert fresh.is_active is False
 
 
+async def test_disconnect_serializes_with_refresh_rotation(
+    db_session, make_user, monkeypatch
+) -> None:
+    _enable(monkeypatch)
+    user = await make_user(email="aipass-refresh-disconnect@lumen.test")
+    connection = await aipass_oauth.store_connection(
+        db_session,
+        user_id=user.id,
+        subject="refresh-disconnect-subject",
+        tokens=aipass_oauth.TokenSet(
+            access_token=SecretStr("old-access"),
+            refresh_token=SecretStr("old-refresh"),
+            expires_at=datetime.now(UTC) - timedelta(minutes=1),
+            scope="api:access",
+        ),
+    )
+    await db_session.commit()
+    connection_id = connection.id
+
+    refresh_started = asyncio.Event()
+    release_refresh = asyncio.Event()
+    revoked: list[str] = []
+
+    async def fake_refresh(_refresh_token: SecretStr) -> aipass_oauth.TokenSet:
+        refresh_started.set()
+        await release_refresh.wait()
+        return aipass_oauth.TokenSet(
+            access_token=SecretStr("rotated-access"),
+            refresh_token=SecretStr("rotated-refresh"),
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
+            scope="api:access",
+        )
+
+    async def fake_revoke(token: SecretStr, *, token_type_hint: str) -> None:
+        del token_type_hint
+        revoked.append(token.get_secret_value())
+
+    monkeypatch.setattr(aipass_oauth, "refresh_tokens", fake_refresh)
+    monkeypatch.setattr(aipass_oauth, "revoke_token", fake_revoke)
+
+    refresh_task = asyncio.create_task(
+        aipass_oauth.get_valid_access_token(
+            connection_id=connection_id,
+            user_id=user.id,
+            force_refresh=True,
+        )
+    )
+    await refresh_started.wait()
+
+    async def run_disconnect() -> None:
+        async with get_sessionmaker()() as session:
+            await aipass_oauth.disconnect(session, user_id=user.id)
+            await session.commit()
+
+    disconnect_task = asyncio.create_task(run_disconnect())
+    await asyncio.sleep(0.05)
+    release_refresh.set()
+    await refresh_task
+    await disconnect_task
+
+    assert revoked == ["rotated-refresh", "rotated-access"]
+    db_session.expire_all()
+    assert (
+        await db_session.execute(
+            select(AIPassConnection).where(AIPassConnection.id == connection_id)
+        )
+    ).scalar_one_or_none() is None
+
+
+async def test_disconnect_invalidates_callback_finishing_after_exchange(
+    db_session, make_user, monkeypatch
+) -> None:
+    _enable(monkeypatch)
+    user = await make_user(email="aipass-callback-disconnect@lumen.test")
+    user_id = user.id
+    start = await aipass_oauth.start_connection(db_session, user_id=user.id)
+    await db_session.commit()
+
+    exchange_started = asyncio.Event()
+    release_exchange = asyncio.Event()
+    revoked: list[str] = []
+
+    async def fake_exchange(*, code: str, verifier: str) -> aipass_oauth.TokenSet:
+        del code, verifier
+        exchange_started.set()
+        await release_exchange.wait()
+        return aipass_oauth.TokenSet(
+            access_token=SecretStr("late-access"),
+            refresh_token=SecretStr("late-refresh"),
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
+            scope="api:access",
+        )
+
+    async def fake_userinfo(_access_token: SecretStr) -> dict[str, object]:
+        return {"sub": "late-subject"}
+
+    async def fake_revoke(token: SecretStr, *, token_type_hint: str) -> None:
+        del token_type_hint
+        revoked.append(token.get_secret_value())
+
+    monkeypatch.setattr(aipass_oauth, "exchange_code", fake_exchange)
+    monkeypatch.setattr(aipass_oauth, "fetch_userinfo", fake_userinfo)
+    monkeypatch.setattr(aipass_oauth, "revoke_token", fake_revoke)
+
+    async def run_callback() -> None:
+        async with get_sessionmaker()() as session:
+            await aipass_oauth.complete_connection(
+                session,
+                state=start.state,
+                code="authorization-code",
+                browser_nonce=start.browser_nonce,
+            )
+
+    callback_task = asyncio.create_task(run_callback())
+    await exchange_started.wait()
+    async with get_sessionmaker()() as session:
+        await aipass_oauth.disconnect(session, user_id=user.id)
+        await session.commit()
+    release_exchange.set()
+
+    with pytest.raises(aipass_oauth.AIPassOAuthStateError):
+        await callback_task
+    assert revoked == ["late-refresh", "late-access"]
+    db_session.expire_all()
+    assert (
+        await db_session.execute(
+            select(AIPassConnection).where(AIPassConnection.user_id == user_id)
+        )
+    ).scalar_one_or_none() is None
+
+
 async def test_disconnect_revokes_then_clears_even_if_revoke_fails(
     db_session, make_user, monkeypatch
 ) -> None:
@@ -447,6 +942,95 @@ async def test_disconnect_revokes_then_clears_even_if_revoke_fails(
             select(AIPassConnection).where(AIPassConnection.id == connection.id)
         )
     ).scalar_one_or_none() is None
+
+
+async def test_disconnect_clears_tokens_if_revocation_is_cancelled(
+    db_session, make_user, monkeypatch
+) -> None:
+    _enable(monkeypatch)
+    user = await make_user(email="aipass-disconnect-cancelled-revoke@lumen.test")
+    connection = await aipass_oauth.store_connection(
+        db_session,
+        user_id=user.id,
+        subject="cancelled-revoke-subject",
+        tokens=aipass_oauth.TokenSet(
+            access_token=SecretStr("cancelled-revoke-access"),
+            refresh_token=SecretStr("cancelled-revoke-refresh"),
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
+            scope="api:access",
+        ),
+    )
+    await db_session.commit()
+    connection_id = connection.id
+    attempts: list[str] = []
+
+    async def fake_revoke(token: SecretStr, *, token_type_hint: str) -> None:
+        del token_type_hint
+        attempts.append(token.get_secret_value())
+        if len(attempts) == 1:
+            raise asyncio.CancelledError
+
+    monkeypatch.setattr(aipass_oauth, "revoke_token", fake_revoke)
+
+    await aipass_oauth.disconnect(db_session, user_id=user.id)
+    await db_session.commit()
+
+    assert attempts == ["cancelled-revoke-refresh", "cancelled-revoke-access"]
+    assert (
+        await db_session.execute(
+            select(AIPassConnection).where(AIPassConnection.id == connection_id)
+        )
+    ).scalar_one_or_none() is None
+
+
+async def test_disconnect_preserves_queued_turn_aipass_funding_marker(
+    db_session, make_user, monkeypatch
+) -> None:
+    _enable(monkeypatch)
+    user = await make_user(email="aipass-disconnect-queued-turn@lumen.test")
+    connection = await aipass_oauth.store_connection(
+        db_session,
+        user_id=user.id,
+        subject="queued-turn-subject",
+        tokens=aipass_oauth.TokenSet(
+            access_token=SecretStr("queued-turn-access"),
+            refresh_token=SecretStr("queued-turn-refresh"),
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
+            scope="api:access",
+        ),
+    )
+    turn = await create_turn(
+        db_session,
+        user_id=user.id,
+        conversation_id=None,
+        reserved_cost_usd=Decimal("0"),
+        reservation_ip_key=None,
+        aipass_connection_id=connection.id,
+        enqueue_task=False,
+    )
+    await db_session.commit()
+    connection_id = connection.id
+    turn_id = turn.id
+
+    async def fake_revoke(token: SecretStr, *, token_type_hint: str) -> None:
+        del token, token_type_hint
+
+    monkeypatch.setattr(aipass_oauth, "revoke_token", fake_revoke)
+    await aipass_oauth.disconnect(db_session, user_id=user.id)
+    await db_session.commit()
+
+    carried_id = (
+        await db_session.execute(
+            select(TutorTurnJob.aipass_connection_id).where(TutorTurnJob.id == turn_id)
+        )
+    ).scalar_one()
+    assert carried_id == connection_id
+    with pytest.raises(aipass_oauth.AIPassReauthRequired):
+        await aipass_oauth.build_provider(
+            db_session,
+            connection_id=carried_id,
+            user_id=user.id,
+        )
 
 
 async def test_revocation_uses_the_discovered_form_endpoint(monkeypatch) -> None:

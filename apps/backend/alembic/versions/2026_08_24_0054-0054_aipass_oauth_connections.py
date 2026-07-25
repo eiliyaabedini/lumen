@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision: str = "0054"
@@ -32,18 +33,14 @@ def upgrade() -> None:
         sa.Column("scope", sa.String(length=255), nullable=False),
         sa.Column("status", sa.String(length=24), nullable=False),
         sa.Column("model", sa.String(length=128), nullable=True),
-        sa.Column(
-            "is_active", sa.Boolean(), server_default=sa.text("false"), nullable=False
-        ),
+        sa.Column("is_active", sa.Boolean(), server_default=sa.text("false"), nullable=False),
         sa.Column(
             "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
         ),
         sa.Column(
             "updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
         ),
-        sa.ForeignKeyConstraint(
-            ["user_id"], ["users.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
@@ -81,9 +78,7 @@ def upgrade() -> None:
         sa.Column(
             "updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
         ),
-        sa.ForeignKeyConstraint(
-            ["user_id"], ["users.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
@@ -109,26 +104,16 @@ def upgrade() -> None:
         ["created_at"],
     )
 
+    # This intentionally has no FK. Disconnect deletes the live token row,
+    # while queued turns must retain the opaque funding marker so a later
+    # worker fails closed instead of falling through to platform billing.
     op.add_column(
         "tutor_turn_jobs",
         sa.Column("aipass_connection_id", sa.String(length=21), nullable=True),
     )
-    op.create_foreign_key(
-        "fk_tutor_turn_jobs_aipass_connection_id_aipass_connections",
-        "tutor_turn_jobs",
-        "aipass_connections",
-        ["aipass_connection_id"],
-        ["id"],
-        ondelete="SET NULL",
-    )
 
 
 def downgrade() -> None:
-    op.drop_constraint(
-        "fk_tutor_turn_jobs_aipass_connection_id_aipass_connections",
-        "tutor_turn_jobs",
-        type_="foreignkey",
-    )
     op.drop_column("tutor_turn_jobs", "aipass_connection_id")
     op.drop_table("aipass_oauth_transactions")
     op.drop_table("aipass_connections")

@@ -1334,7 +1334,8 @@ export const en = {
 
   // AI Pass — optional OAuth account connection
   "aipass.title": "Connect AI Pass",
-  "aipass.description": "Connect your AI Pass account to use its shared wallet—no API key needed.",
+  "aipass.description":
+    "Connect your AI Pass account for tutor requests using its shared wallet—no API key needed.",
   "aipass.connect": "Connect AI Pass",
   "aipass.connected": "Connected",
   "aipass.connectedNow": "AI Pass connected.",
@@ -1343,7 +1344,7 @@ export const en = {
   "aipass.reconnectAction": "Reconnect AI Pass",
   "aipass.disconnect": "Disconnect AI Pass",
   "aipass.disconnected": "AI Pass disconnected.",
-  "aipass.active": "Use for my requests",
+  "aipass.active": "Use for tutor requests",
   "aipass.model": "AI Pass model",
   "aipass.modelChoose": "Choose a model",
   "aipass.modelsLoading": "Loading live models…",

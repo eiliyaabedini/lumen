@@ -125,11 +125,15 @@ PKCE verifier are envelope-encrypted in Postgres; browser JavaScript receives
 only connection status and live model metadata.
 
 Refresh-token rotation holds a row lock and persists the replacement encrypted
-bundle atomically. Disconnect attempts revocation and always clears local
-material. The worker receives only an opaque connection ID, never a bearer
-token. A user cancellation marks the durable turn aborted; the worker observes
-that state and cancels the active upstream response so shared-wallet spend is
-not allowed to continue after the UI stops.
+bundle atomically. Disconnect serializes with refresh and callback completion,
+invalidates pending connection attempts, attempts revocation, and always clears
+local material. Tutor requests are the only dispatch surface that opts into AI
+Pass; authoring and other existing provider paths remain unchanged. The worker
+receives only an opaque connection ID, never a bearer token. A user cancellation
+marks the durable turn aborted; the worker observes that state and cancels the
+active upstream response so shared-wallet spend is not allowed to continue
+after the UI stops. Disconnect cannot erase a queued job's AI Pass funding
+marker; that job fails closed if its encrypted connection no longer exists.
 
 The integration is fail-closed behind `FEATURE_AIPASS_OAUTH_ENABLED`. It also
 requires the existing public client identifier from protected runtime

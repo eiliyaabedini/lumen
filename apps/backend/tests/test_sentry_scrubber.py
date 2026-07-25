@@ -83,6 +83,32 @@ def test_scrubs_aipass_callback_query_from_telemetry() -> None:
     assert "state-sentinel" not in str(cleaned)
 
 
+def test_scrubs_aipass_transport_locals_from_telemetry() -> None:
+    event = _make_event()
+    frame = event["exception"]["values"][0]["stacktrace"]["frames"][0]
+    frame["filename"] = "app/services/aipass_client.py"
+    frame["vars"] = {
+        "headers": {"Authorization": "Bearer access-token-sentinel"},
+        "json_body": {"refreshToken": "refresh-token-sentinel"},
+        "response": "upstream-response-sentinel",
+        "value": "client-id-sentinel",
+        "innocuous": "keep me",
+    }
+
+    cleaned = before_send(event)
+    frame_vars = cleaned["exception"]["values"][0]["stacktrace"]["frames"][0]["vars"]
+
+    assert frame_vars["headers"] == REDACTED
+    assert frame_vars["json_body"] == REDACTED
+    assert frame_vars["response"] == REDACTED
+    assert frame_vars["value"] == REDACTED
+    assert frame_vars["innocuous"] == "keep me"
+    assert "access-token-sentinel" not in str(cleaned)
+    assert "refresh-token-sentinel" not in str(cleaned)
+    assert "upstream-response-sentinel" not in str(cleaned)
+    assert "client-id-sentinel" not in str(cleaned)
+
+
 def test_scrubs_tutor_breadcrumbs_only() -> None:
     event = _make_event()
     event["breadcrumbs"] = {

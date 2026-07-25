@@ -120,8 +120,9 @@ The optional AI Pass integration uses Authorization Code + PKCE and keeps its
 access/refresh tokens encrypted in FastAPI/Postgres; browser JavaScript receives
 connection metadata only. Models are discovered live from the connected
 account, and chat runs from the API or worker against the learner's shared AI
-Pass wallet. The feature ships off and requires the existing public client ID
-in protected runtime configuration plus a registered callback URI. See
+Pass wallet for tutor requests. Other platform and BYOK dispatch paths remain
+unchanged. The feature ships off and requires the existing public client ID in
+protected runtime configuration plus a registered callback URI. See
 [ADR-0032](docs/adr/0032-aipass-oauth-account-connection.md).
 
 ### Zero-downtime phased migrations with evidence gates

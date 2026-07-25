@@ -36,6 +36,28 @@ def test_parse_models_accepts_openai_and_legacy_shapes(payload, expected) -> Non
     assert [m.id for m in models] == expected
 
 
+def test_parse_models_excludes_detailed_non_chat_models() -> None:
+    models = aipass_client.parse_models(
+        {
+            "object": "list",
+            "data": [
+                {
+                    "id": "chat-model",
+                    "name": "Chat model",
+                    "methods": ["chat_completions"],
+                },
+                {
+                    "id": "speech-model",
+                    "name": "Speech model",
+                    "methods": ["audio_speech"],
+                },
+            ],
+        }
+    )
+
+    assert [model.id for model in models] == ["chat-model"]
+
+
 @pytest.mark.parametrize(
     "payload",
     [
@@ -249,4 +271,33 @@ async def test_stream_cancellation_closes_upstream_response() -> None:
     with pytest.raises(asyncio.CancelledError):
         await task
     await asyncio.wait_for(closed.wait(), timeout=1)
+    await client.aclose()
+
+
+async def test_truncated_stream_without_terminal_event_is_rejected() -> None:
+    class TruncatedStream(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            yield b'data: {"choices":[{"delta":{"content":"partial"}}]}\n\n'
+
+    async def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            headers={"content-type": "text/event-stream"},
+            stream=TruncatedStream(),
+        )
+
+    async def token_provider(_force_refresh: bool) -> SecretStr:
+        return SecretStr("stream-token")
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    provider = aipass_client.AIPassProvider(
+        model="live-model",
+        token_provider=token_provider,
+        client=client,
+        max_tokens=32,
+    )
+
+    with pytest.raises(aipass_client.AIPassProtocolError):
+        async for _chunk in provider.stream([ChatMessage(role="user", content="hello")]):
+            pass
     await client.aclose()

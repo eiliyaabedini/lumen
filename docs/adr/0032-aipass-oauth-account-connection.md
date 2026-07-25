@@ -62,17 +62,20 @@ control. The feature must remain inert when either prerequisite is absent.
 - Refresh under a row lock in an independent short transaction and replace the
   encrypted bundle in the same commit. A failed refresh marks the connection
   `reauth_required` and inactive.
-- Disconnect attempts refresh-token and access-token revocation independently,
-  then unconditionally deletes local token material even if revocation or local
-  decryption fails. Account deletion uses the same disconnect path.
+- Disconnect serializes with refresh and callback completion, deletes pending
+  OAuth transactions, attempts refresh-token and access-token revocation
+  independently, then unconditionally deletes local token material even if
+  revocation or local decryption fails. A reconnect revokes the superseded
+  grant after its replacement is durable. Account deletion uses the same path.
 
 ### Models and dispatch
 
 - Discover models live with
   `GET https://aipass.one/oauth2/v1/models?detailed=true`. Accept the OpenAI
   list envelope (`{"object":"list","data":[...]}`) and the legacy string-array
-  shape defensively. Do not add AI Pass model identifiers to a source-code
-  allowlist.
+  shape defensively. When detailed entries advertise methods, expose only
+  `chat_completions` models. Do not add AI Pass model identifiers to a
+  source-code allowlist.
 - Revalidate a stored model against live discovery whenever it is selected or
   reactivated. Selecting AI Pass makes existing BYOK credentials inactive but
   leaves them connected; selecting BYOK makes AI Pass inactive. Existing
@@ -82,6 +85,14 @@ control. The feature must remain inert when either prerequisite is absent.
   provider. The initiation context carries only an opaque connection ID into a
   Celery turn; the worker obtains and refreshes the token inside its trust
   boundary.
+- Only tutor context resolution opts into AI Pass. Authoring, course building,
+  learning-path generation, background work, and all existing provider paths
+  keep their prior platform/BYOK behavior. This keeps wallet-backed work on the
+  surface whose stop action durably aborts the active upstream request.
+- Streamed tutor jobs retain the opaque AI Pass connection ID after
+  disconnect. A worker that starts later therefore fails closed on the missing
+  grant instead of losing the funding marker and falling through to platform
+  billing.
 - Record `billing_mode="aipass"` separately from platform and BYOK. AI Pass
   remains subject to non-dollar request/concurrency safeguards but does not
   consume Lumen's platform-dollar budget.
@@ -98,6 +109,9 @@ control. The feature must remain inert when either prerequisite is absent.
   model, revoke, and chat traffic. Follow no redirects.
 - Normalize upstream failures without response bodies, tokens, authorization
   codes, state, vendor request IDs, or headers in client-visible errors.
+- Validate callback query bounds inside the redirect handler so malformed
+  authorization codes or state are never reflected by framework validation
+  responses. Scrub AI Pass transport locals from error telemetry.
 - Ship behind `FEATURE_AIPASS_OAUTH_ENABLED=false`. If the protected public
   client identifier, registered callback URI, or secure KEK is absent, fail
   closed and show the account connection as unavailable.
@@ -123,6 +137,8 @@ control. The feature must remain inert when either prerequisite is absent.
 
 - API and worker processes both remain inside the encrypted-token trust
   boundary and require the same KEK versions.
+- The existing KEK rotation command covers AI Pass token bundles and pending
+  PKCE verifiers as well as BYOK credentials before an old KEK is retired.
 - The feature is deployable only after operators provide the existing public
   client identifier through protected runtime configuration and register the
   exact HTTPS callback URI. Until then it is intentionally unavailable.
