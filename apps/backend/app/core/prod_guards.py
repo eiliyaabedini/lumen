@@ -208,9 +208,8 @@ def _has_real_kek(settings: Any) -> bool:
 def _byok_secret_rows_exist() -> bool:
     """Best-effort sync probe: does any encrypted-secret row exist yet?
 
-    Reads ``user_llm_credentials`` (BYOK keys) and ``learning_briefs``
-    (field-encrypted goals, design-spec §9 gap 4) — both encrypt material
-    under the KEK, so either implies a real KEK must be present (R-S3 / DR-7).
+    Reads every table that can hold KEK-encrypted material: BYOK keys,
+    learning-brief goals, AI Pass token bundles, and pending PKCE verifiers.
 
     These tables do not exist yet (they land in S5/S3). The probe catches
     ``ProgrammingError``/undefined-table and any connection failure and
@@ -231,7 +230,12 @@ def _byok_secret_rows_exist() -> bool:
 
     try:
         with engine.connect() as conn:
-            for table in ("user_llm_credentials", "learning_briefs"):
+            for table in (
+                "user_llm_credentials",
+                "learning_briefs",
+                "aipass_connections",
+                "aipass_oauth_transactions",
+            ):
                 try:
                     found = conn.execute(
                         text(f"SELECT 1 FROM {table} LIMIT 1")  # noqa: S608 - fixed allowlist
@@ -259,10 +263,9 @@ def assert_byok_kek_present(settings: Any, problems: list[str]) -> None:
 
     * the deployment is production (a prod box must always carry a real KEK
       so the BYOK path is bootable), OR
-    * any encrypted-secret row already exists (``user_llm_credentials`` or
-      ``learning_briefs``) — encrypted material can only be decrypted with
-      the KEK that wrapped it, so a missing/derived KEK would silently
-      strand it. This second condition fires in **any** env (dev included).
+    * any encrypted-secret row already exists (BYOK, learning briefs, or AI
+      Pass OAuth material) — a missing/derived KEK would strand it. This
+      second condition fires in **any** env (dev included).
 
     A derived-from-``secret_key`` KEK does NOT satisfy the requirement.
     """
@@ -273,7 +276,7 @@ def assert_byok_kek_present(settings: Any, problems: list[str]) -> None:
             "BYOK master key (KEK) is missing or derived: set "
             'BYOK_MASTER_KEYS={"1":"<base64 32-byte key>"} + '
             "BYOK_MASTER_KEY_VERSION=1. A real KEK is required in production "
-            "and whenever any encrypted credential/brief row already exists "
+            "and whenever any encrypted credential/token/brief row exists "
             "(the derived dev fallback cannot decrypt stored secrets)."
         )
 

@@ -32,6 +32,7 @@ from sqlalchemy.exc import ProgrammingError
 from app.core.errors import AccessRevokedError, UnauthorizedError
 from app.core.logging import get_logger
 from app.core.security import hash_password, verify_password
+from app.models.aipass_connection import AIPassOAuthTransaction
 
 # F1 (S6 gate): EVERY model this module mutates is imported at module top, NOT
 # lazily inside each step. A lazy import that names a class wrong (the original
@@ -174,6 +175,9 @@ async def delete_account(
     # ---- Step 6. Purge BYOK credentials (hard delete of key material) ----
     await _purge_byok_credentials(db, uid)
 
+    # ---- Step 6b. Revoke and purge AI Pass OAuth material ----
+    await _purge_aipass_connection(db, uid)
+
     # ---- Step 7. Revoke MCP clients ----
     await _revoke_mcp_clients(db, uid)
 
@@ -211,6 +215,23 @@ async def _purge_byok_credentials(db: AsyncSession, user_id: str) -> None:
         await db.execute(sa_delete(UserLLMCredential).where(UserLLMCredential.user_id == user_id))
     except _OPTIONAL_STEP_ERRORS as exc:  # pragma: no cover — missing-table tolerance
         log.warning("delete_account_byok_purge_skipped", error=str(exc), user_id=user_id)
+
+
+async def _purge_aipass_connection(db: AsyncSession, user_id: str) -> None:
+    """Best-effort revoke, then hard-delete OAuth tokens and pending PKCE rows."""
+    try:
+        from app.services import aipass_oauth
+
+        await aipass_oauth.disconnect(db, user_id=user_id)
+        await db.execute(
+            sa_delete(AIPassOAuthTransaction).where(AIPassOAuthTransaction.user_id == user_id)
+        )
+    except _OPTIONAL_STEP_ERRORS as exc:  # pragma: no cover - migration skew
+        log.warning(
+            "delete_account_aipass_purge_skipped",
+            error=str(exc),
+            user_id=user_id,
+        )
 
 
 async def _revoke_mcp_clients(db: AsyncSession, user_id: str) -> None:

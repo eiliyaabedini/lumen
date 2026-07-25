@@ -32,11 +32,14 @@ from __future__ import annotations
 import asyncio
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.services.llm import ChatMessage, NoopProvider, get_provider
+
+if TYPE_CHECKING:
+    from app.services.aipass_client import AIPassProvider
 
 log = get_logger(__name__)
 
@@ -78,6 +81,7 @@ async def stream_chat(
     *,
     temperature: float = 0.2,
     byok_dispatch: dict[str, str] | None = None,
+    aipass_provider: AIPassProvider | None = None,
 ) -> AsyncIterator[StreamChunk]:
     """Provider-agnostic streaming dispatcher.
 
@@ -99,6 +103,18 @@ async def stream_chat(
     - ``openai`` → :func:`_stream_chat_openai` (real streaming)
     - ``anthropic`` → :func:`_stream_chat_anthropic` (real streaming, L37)
     """
+    if aipass_provider is not None:
+        async for aipass_chunk in aipass_provider.stream(
+            messages,
+            temperature=temperature,
+        ):
+            yield StreamChunk(
+                delta=aipass_chunk.delta,
+                done=aipass_chunk.done,
+                usage=dict(aipass_chunk.usage),
+            )
+        return
+
     if byok_dispatch is not None:
         if byok_dispatch.get("transport") == "anthropic":
             async for chunk in _stream_chat_anthropic_compat(

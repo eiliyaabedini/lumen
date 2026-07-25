@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import secrets_crypto
@@ -29,6 +29,7 @@ from app.core.errors import (
     ByokValidateRateLimitedError,
 )
 from app.core.logging import get_logger
+from app.models.aipass_connection import AIPassConnection
 from app.models.audit import AuditEvent
 from app.models.user import User
 from app.models.user_llm_credential import (
@@ -213,6 +214,13 @@ async def patch(
             if prior is not None and prior.id != cred.id:
                 prior.is_active = False
                 await db.flush()
+            # AI Pass remains connected but inactive, so switching back never
+            # requires another OAuth login and BYOK behavior stays unchanged.
+            await db.execute(
+                update(AIPassConnection)
+                .where(AIPassConnection.user_id == user.id)
+                .values(is_active=False)
+            )
         cred.is_active = is_active
     await db.flush()
 

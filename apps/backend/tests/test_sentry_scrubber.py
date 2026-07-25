@@ -65,6 +65,24 @@ def test_leaves_non_tutor_request_body_alone() -> None:
     assert cleaned["request"]["data"] == {"query": "search term"}
 
 
+def test_scrubs_aipass_callback_query_from_telemetry() -> None:
+    event = _make_event()
+    event["request"] = {
+        "url": (
+            "https://lumen.test/api/v1/aipass/oauth/callback"
+            "?code=authorization-code-sentinel&state=state-sentinel"
+        ),
+        "query_string": "code=authorization-code-sentinel&state=state-sentinel",
+    }
+
+    cleaned = before_send(event)
+
+    assert cleaned["request"]["url"] == "https://lumen.test/api/v1/aipass/oauth/callback"
+    assert cleaned["request"]["query_string"] == REDACTED
+    assert "authorization-code-sentinel" not in str(cleaned)
+    assert "state-sentinel" not in str(cleaned)
+
+
 def test_scrubs_tutor_breadcrumbs_only() -> None:
     event = _make_event()
     event["breadcrumbs"] = {

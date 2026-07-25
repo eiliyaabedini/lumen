@@ -237,6 +237,30 @@ class Settings(BaseSettings):
     # KEK there is a hard boot refusal anyway).
     byok_allow_derived_kek: bool = False
 
+    # ---------- AI Pass OAuth account connection (ADR-0032) ----------
+    # Server-backed public-client flow. The client id is intentionally a
+    # SecretStr even though OAuth client identifiers are public protocol
+    # values: it must come from protected runtime/build configuration and
+    # must never appear in application logs, API DTOs, browser state, or the
+    # repository. It is used only in the server-issued redirect and token
+    # exchange. There is no client secret (PKCE S256, token auth method none).
+    feature_aipass_oauth_enabled: bool = False
+    aipass_oauth_client_id: SecretStr | None = None
+    aipass_oauth_redirect_uri: AnyHttpUrl | None = None
+    aipass_oauth_transaction_ttl_seconds: int = Field(default=600, ge=60, le=1800)
+    aipass_oauth_timeout_seconds: float = Field(default=15.0, ge=1.0, le=30.0)
+    aipass_oauth_max_response_bytes: int = Field(
+        default=2 * 1024 * 1024, ge=1024, le=4 * 1024 * 1024
+    )
+    aipass_chat_max_request_bytes: int = Field(default=512 * 1024, ge=1024, le=1024 * 1024)
+    aipass_chat_max_response_bytes: int = Field(
+        default=2 * 1024 * 1024, ge=1024, le=4 * 1024 * 1024
+    )
+    aipass_stream_max_event_bytes: int = Field(default=128 * 1024, ge=1024, le=512 * 1024)
+    aipass_stream_max_response_bytes: int = Field(
+        default=4 * 1024 * 1024, ge=1024, le=8 * 1024 * 1024
+    )
+
     # ---------- Non-dollar request/job quotas (DR-11/16, R-M7'/R-G1) ----------
     # Pre-dispatch DB COUNT(*) of llm_calls per user per window, independent
     # of dollars — this is what closes the $0-BYOK bypass (a free-priced BYOK

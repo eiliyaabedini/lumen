@@ -31,7 +31,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import desc, func, select
 
 from app.api.deps import DBSession, RequireAdmin
-from app.models.llm_call import LLMCall
+from app.models.llm_call import BILLING_PLATFORM, LLMCall
 
 router = APIRouter()
 
@@ -188,7 +188,10 @@ async def llm_calls_summary(
     # correct (FR-BYOK-27).
     total_stmt = select(
         func.count(LLMCall.id),
-        func.coalesce(func.sum(LLMCall.cost_usd).filter(LLMCall.billing_mode != "byok"), 0),
+        func.coalesce(
+            func.sum(LLMCall.cost_usd).filter(LLMCall.billing_mode == BILLING_PLATFORM),
+            0,
+        ),
     ).where(LLMCall.created_at >= since)
     total_row = (await db.execute(total_stmt)).one()
     total_calls = int(total_row[0])

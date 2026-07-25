@@ -51,6 +51,7 @@ from app.core.config import get_settings
 from app.core.errors import BudgetExceededError, QuotaExceededError
 from app.core.logging import get_logger
 from app.models.llm_call import (
+    BILLING_AIPASS,
     BILLING_BYOK,
     BILLING_PLATFORM,
     STATUS_BUDGET_EXCEEDED,
@@ -141,7 +142,7 @@ def quota_limits(billing_mode: str) -> tuple[int, int]:
     ``tutor_turn_jobs`` instead).
     """
     s = get_settings()
-    if billing_mode == BILLING_BYOK:
+    if billing_mode in (BILLING_BYOK, BILLING_AIPASS):
         # BYOK users get a higher 24h request ceiling (they pay their own
         # provider); the 1h burst window is shared.
         return int(s.byok_requests_24h), int(s.llm_user_request_quota_1h)
@@ -410,7 +411,7 @@ async def call_logged(
     """
     settings = get_settings()
     mode = billing_mode or (ctx.mode if ctx is not None else BILLING_PLATFORM)
-    if mode not in (BILLING_PLATFORM, BILLING_BYOK):
+    if mode not in (BILLING_PLATFORM, BILLING_BYOK, BILLING_AIPASS):
         mode = BILLING_PLATFORM
 
     if not settings.llm_cost_tracking_enabled:

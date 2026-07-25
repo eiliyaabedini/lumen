@@ -67,6 +67,7 @@ async def create_turn(
     user_message: str | None = None,
     course_id: str | None = None,
     credential_id: str | None = None,
+    aipass_connection_id: str | None = None,
     enqueue_task: bool = True,
 ) -> TutorTurnJob:
     """Insert a new turn row.
@@ -92,6 +93,9 @@ async def create_turn(
         # S5.12/R-S1'': the foreground-resolved credential id carried to the
         # worker (never the key — FR-BYOK-26).
         credential_id=credential_id,
+        # OAuth bearer material stays encrypted server-side; only this opaque
+        # connection id crosses the API-to-worker handoff.
+        aipass_connection_id=aipass_connection_id,
     )
     db.add(turn)
     await db.flush()

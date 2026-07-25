@@ -34,7 +34,12 @@ from app.core import secrets_crypto
 from app.core.config import get_settings
 from app.core.errors import ByokModelUnavailableError, ByokProviderError
 from app.core.logging import get_logger
-from app.models.llm_call import BILLING_BYOK, BILLING_PLATFORM, SYSTEM_USER_ID
+from app.models.llm_call import (
+    BILLING_AIPASS,
+    BILLING_BYOK,
+    BILLING_PLATFORM,
+    SYSTEM_USER_ID,
+)
 from app.models.user_llm_credential import (
     VALIDATION_INVALID,
     VALIDATION_NEEDS_ATTENTION,
@@ -71,12 +76,17 @@ class LLMContext:
 
     user_id: str | None
     credential_id: str | None = None
+    aipass_connection_id: str | None = None
     foreground: bool = False
-    mode: str = "platform"  # "platform" | "byok" — informational; build_provider re-derives
+    mode: str = "platform"  # platform | byok | aipass; build_provider re-derives
 
 
 PLATFORM_CONTEXT = LLMContext(
-    user_id=SYSTEM_USER_ID, credential_id=None, foreground=False, mode="platform"
+    user_id=SYSTEM_USER_ID,
+    credential_id=None,
+    aipass_connection_id=None,
+    foreground=False,
+    mode="platform",
 )
 
 
@@ -92,20 +102,37 @@ def _byok_enabled() -> bool:
     return bool(getattr(get_settings(), "feature_byok_enabled", False))
 
 
+def _aipass_enabled() -> bool:
+    return bool(getattr(get_settings(), "feature_aipass_oauth_enabled", False))
+
+
 async def resolve_context(db: AsyncSession, *, user_id: str | None) -> LLMContext:
-    """Resolve the foreground BYOK context for ``user_id`` (NO decrypt).
+    """Resolve the foreground user-funded context for ``user_id`` (NO decrypt).
 
-    Returns a foreground ``LLMContext`` carrying the user's active credential
-    id when one is usable; otherwise a foreground platform context. Picks the
-    credential by repo (active + enabled + live); does not decrypt — that is
-    ``build_provider``'s job and the decrypt-locus spy test pins it.
+    An active AI Pass account takes precedence over BYOK because selection
+    deactivates the other source. The context carries only an opaque database
+    id; bearer/API-key material remains inside the server dispatch boundary.
 
-    When the feature flag is off, or there's no user / a system user, the
+    When both optional integrations are off, or there is no acting user, the
     result resolves to platform.
     """
-    if not user_id or user_id == SYSTEM_USER_ID or not _byok_enabled():
+    if not user_id or user_id == SYSTEM_USER_ID:
         return LLMContext(user_id=user_id, credential_id=None, foreground=True, mode="platform")
 
+    if _aipass_enabled():
+        from app.services import aipass_oauth
+
+        connection = await aipass_oauth.get_active_connection(db, user_id=user_id)
+        if connection is not None:
+            return LLMContext(
+                user_id=user_id,
+                aipass_connection_id=connection.id,
+                foreground=True,
+                mode=BILLING_AIPASS,
+            )
+
+    if not _byok_enabled():
+        return LLMContext(user_id=user_id, credential_id=None, foreground=True, mode="platform")
     cred = await cred_repo.get_active_for_user(db, user_id)
     if cred is None or not cred.enabled or cred.last_validation_status == VALIDATION_INVALID:
         return LLMContext(user_id=user_id, credential_id=None, foreground=True, mode="platform")
@@ -128,7 +155,20 @@ async def build_provider(db: AsyncSession, ctx: LLMContext) -> tuple[LLMProvider
         - otherwise decrypt the key once and build the registry-fixed
           provider with the user's model → billing_mode="byok".
     """
-    if not ctx.foreground or not ctx.credential_id or not _byok_enabled():
+    if not ctx.foreground:
+        return llm_service.get_provider(), BILLING_PLATFORM
+
+    if ctx.aipass_connection_id and _aipass_enabled() and ctx.user_id:
+        from app.services import aipass_oauth
+
+        aipass_provider = await aipass_oauth.build_provider(
+            db,
+            connection_id=ctx.aipass_connection_id,
+            user_id=ctx.user_id,
+        )
+        return aipass_provider, BILLING_AIPASS
+
+    if not ctx.credential_id or not _byok_enabled():
         return llm_service.get_provider(), BILLING_PLATFORM
 
     cred = await cred_repo.get_by_id(db, ctx.credential_id)

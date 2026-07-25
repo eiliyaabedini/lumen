@@ -417,7 +417,7 @@ def create_app() -> FastAPI:
     if settings.sentry_dsn:  # pragma: no cover - depends on env
         import sentry_sdk
 
-        from app.core.sentry_scrubber import before_send
+        from app.core.sentry_scrubber import before_send, before_send_transaction
 
         sentry_sdk.init(
             dsn=settings.sentry_dsn,
@@ -426,6 +426,7 @@ def create_app() -> FastAPI:
             # L21-Sec — zero out tutor-namespace locals + request bodies
             # before the event ships. See app/core/sentry_scrubber.py.
             before_send=before_send,
+            before_send_transaction=before_send_transaction,
         )
 
     # OpenTelemetry — opt-in via OTEL_EXPORTER_OTLP_ENDPOINT. No-op

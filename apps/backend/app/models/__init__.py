@@ -1,6 +1,12 @@
 """SQLAlchemy ORM models — imported here so Alembic sees them all."""
 
 from app.models.agent_trace import AgentTrace
+from app.models.aipass_connection import (
+    AIPASS_STATUS_CONNECTED,
+    AIPASS_STATUS_REAUTH_REQUIRED,
+    AIPassConnection,
+    AIPassOAuthTransaction,
+)
 from app.models.asset import Asset
 from app.models.audit import AuditEvent
 from app.models.course import (
@@ -58,6 +64,8 @@ from app.models.user_llm_credential import (
 )
 
 __all__ = [
+    "AIPASS_STATUS_CONNECTED",
+    "AIPASS_STATUS_REAUTH_REQUIRED",
     "EMBEDDING_DIM",
     "TERMINAL_TURN_STATUSES",
     "TURN_STATUS_ABORTED",
@@ -71,6 +79,8 @@ __all__ = [
     "VALIDATION_NEEDS_ATTENTION",
     "VALIDATION_UNVALIDATED",
     "VALIDATION_VALID",
+    "AIPassConnection",
+    "AIPassOAuthTransaction",
     "AgentTrace",
     "Asset",
     "AuditEvent",

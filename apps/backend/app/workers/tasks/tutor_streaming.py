@@ -26,11 +26,12 @@ import asyncio
 import contextlib
 import time
 from decimal import Decimal
+from typing import Any
 
 import redis.asyncio as redis
 from celery.utils.log import get_task_logger
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.config import get_settings
 from app.core.cost_scripts import (
@@ -41,11 +42,23 @@ from app.core.cost_scripts import (
 )
 from app.db.base import make_worker_engine
 from app.models.course import Course
-from app.models.llm_call import BILLING_BYOK, BILLING_PLATFORM, STATUS_ERROR, STATUS_OK
-from app.models.tutor_turn_job import TURN_STATUS_COMPLETE, TURN_STATUS_FAILED
+from app.models.llm_call import (
+    BILLING_AIPASS,
+    BILLING_BYOK,
+    BILLING_PLATFORM,
+    STATUS_ERROR,
+    STATUS_OK,
+)
+from app.models.tutor_turn_job import (
+    TURN_STATUS_ABORTED,
+    TURN_STATUS_COMPLETE,
+    TURN_STATUS_FAILED,
+    TutorTurnJob,
+)
 from app.services import account as account_service
-from app.services import agent_tracer
+from app.services import agent_tracer, aipass_oauth
 from app.services import byok as byok_service
+from app.services.aipass_client import AIPassProvider
 from app.services.llm_call_log import record_streamed_turn_row
 from app.services.redis_streams import emit_event, set_stream_ttl
 from app.services.tutor import extract_citation_dicts
@@ -85,18 +98,80 @@ class PlatformFallbackCapError(RuntimeError):
     generic handler — error_code ``tutor.runtime: PlatformFallbackCapError``."""
 
 
-def _stream_provider_name(byok_dispatch: dict[str, str] | None) -> str:
+def _stream_provider_name(
+    byok_dispatch: dict[str, str] | None,
+    aipass_provider: AIPassProvider | None = None,
+) -> str:
     """Provider label for the streamed turn's llm_calls row."""
+    if aipass_provider is not None:
+        return aipass_provider.name
     if byok_dispatch:
         return byok_dispatch.get("transport", "byok")
     return str(getattr(get_settings(), "llm_provider", "platform") or "platform")
 
 
-def _stream_model_name(byok_dispatch: dict[str, str] | None) -> str:
+def _stream_model_name(
+    byok_dispatch: dict[str, str] | None,
+    aipass_provider: AIPassProvider | None = None,
+) -> str:
     """Model label for the streamed turn's llm_calls row."""
+    if aipass_provider is not None:
+        return aipass_provider._model
     if byok_dispatch:
         return byok_dispatch.get("model", "unknown")
     return str(getattr(get_settings(), "llm_model", "") or "unknown")
+
+
+def _stream_billing_mode(
+    byok_dispatch: dict[str, str] | None,
+    aipass_provider: AIPassProvider | None = None,
+) -> str:
+    if aipass_provider is not None:
+        return BILLING_AIPASS
+    if byok_dispatch is not None:
+        return BILLING_BYOK
+    return BILLING_PLATFORM
+
+
+async def _cancel_when_turn_aborted(
+    session_factory: async_sessionmaker[AsyncSession],
+    *,
+    turn_id: str,
+    owner: asyncio.Task,
+    cancelled_by_user: asyncio.Event,
+) -> None:
+    """Cancel the worker task when DELETE marks its job aborted.
+
+    Cancelling the task propagates into the active async HTTP iterator. The
+    AI Pass provider's response context then closes the upstream socket, which
+    is required to stop wallet-billed generation rather than merely hiding it.
+    """
+    warned = False
+    while True:
+        await asyncio.sleep(0.1)
+        try:
+            async with session_factory() as db:
+                status = (
+                    await db.execute(select(TutorTurnJob.status).where(TutorTurnJob.id == turn_id))
+                ).scalar_one_or_none()
+        except Exception as exc:
+            if not warned:
+                log.warning(
+                    "tutor_cancel_watch_failed",
+                    extra={
+                        "turn_id": turn_id,
+                        "error_kind": type(exc).__name__,
+                    },
+                )
+                warned = True
+            continue
+        warned = False
+        if status == TURN_STATUS_ABORTED:
+            cancelled_by_user.set()
+            owner.cancel()
+            return
+        if status in (TURN_STATUS_COMPLETE, TURN_STATUS_FAILED) or status is None:
+            return
 
 
 async def _run_turn_async(turn_id: str) -> None:
@@ -122,7 +197,11 @@ async def _run_turn_async(turn_id: str) -> None:
     reservation_ip_key: str | None = None
     actual_cost_microcents: int = 0
     credential_id: str | None = None
+    aipass_connection_id: str | None = None
     byok_dispatch: dict[str, str] | None = None
+    aipass_provider: AIPassProvider | None = None
+    cancelled_by_user = asyncio.Event()
+    cancel_watcher: asyncio.Task | None = None
     final_cost_usd: float = 0.0
     final_total_ms: int = 0
     # S7 — provider-reported token usage carried off the terminal
@@ -145,6 +224,8 @@ async def _run_turn_async(turn_id: str) -> None:
             user_message_content = turn.user_message or ""
             reservation_ip_key = turn.reservation_ip_key
             credential_id = turn.credential_id
+            carried_aipass_id = getattr(turn, "aipass_connection_id", None)
+            aipass_connection_id = carried_aipass_id if isinstance(carried_aipass_id, str) else None
             # The row stores USD as Decimal; convert back to the
             # integer microcent shape the reconcile Lua expects.
             reserved_microcents = int(turn.reserved_cost_usd * USD_TO_MICROCENTS)
@@ -158,6 +239,25 @@ async def _run_turn_async(turn_id: str) -> None:
                 db, conversation_id=conversation_id, content=user_message_content
             )
             await db.commit()
+
+        if aipass_connection_id:
+            owner = asyncio.current_task()
+            if owner is not None:
+                cancel_watcher = asyncio.create_task(
+                    _cancel_when_turn_aborted(
+                        Session,
+                        turn_id=turn_id,
+                        owner=owner,
+                        cancelled_by_user=cancelled_by_user,
+                    )
+                )
+            async with Session() as db:
+                aipass_provider = await aipass_oauth.build_provider(
+                    db,
+                    connection_id=aipass_connection_id,
+                    user_id=user_id,
+                    token_session_factory=Session,
+                )
 
         # S5.12/R-S1'': re-resolve + decrypt the user's BYOK key IN THE WORKER
         # from the carried credential_id (never the key bytes — FR-BYOK-26).
@@ -292,14 +392,19 @@ async def _run_turn_async(turn_id: str) -> None:
         # entirely (Gate-B: every terminal transition persists a row).
         synth_row_written = False
         async with Session() as hb_db:
+            stream_kwargs: dict[str, Any] = {
+                "turn_id": turn_id,
+                "user_id": user_id,
+                "user_message": user_message_content,
+                "course_id": course_id,
+                "retrieved_chunks": retrieved_chunks or None,
+                "retrieval_latency_ms": retrieval_latency_ms,
+                "byok_dispatch": byok_dispatch,
+            }
+            if aipass_provider is not None:
+                stream_kwargs["aipass_provider"] = aipass_provider
             async for ev in orchestrate_stream(
-                turn_id=turn_id,
-                user_id=user_id,
-                user_message=user_message_content,
-                course_id=course_id,
-                retrieved_chunks=retrieved_chunks or None,
-                retrieval_latency_ms=retrieval_latency_ms,
-                byok_dispatch=byok_dispatch,
+                **stream_kwargs,
             ):
                 # If the user was suspended/deleted mid-stream, assert_account_
                 # active raises account.access_revoked and we stop emitting /
@@ -354,13 +459,13 @@ async def _run_turn_async(turn_id: str) -> None:
                             await record_streamed_turn_row(
                                 mdb,
                                 user_id=user_id,
-                                provider=_stream_provider_name(byok_dispatch),
-                                model=_stream_model_name(byok_dispatch),
+                                provider=_stream_provider_name(byok_dispatch, aipass_provider),
+                                model=_stream_model_name(byok_dispatch, aipass_provider),
                                 cost_usd=final_cost_usd,
                                 latency_ms=final_total_ms,
                                 status=STATUS_OK,
                                 error_kind=None,
-                                billing_mode=BILLING_BYOK if byok_dispatch else BILLING_PLATFORM,
+                                billing_mode=_stream_billing_mode(byok_dispatch, aipass_provider),
                                 prompt_tokens=final_prompt_tokens,
                                 completion_tokens=final_completion_tokens,
                                 feature=(
@@ -513,13 +618,13 @@ async def _run_turn_async(turn_id: str) -> None:
                         await record_streamed_turn_row(
                             db,
                             user_id=user_id,
-                            provider=_stream_provider_name(byok_dispatch),
-                            model=_stream_model_name(byok_dispatch),
+                            provider=_stream_provider_name(byok_dispatch, aipass_provider),
+                            model=_stream_model_name(byok_dispatch, aipass_provider),
                             cost_usd=0.0,
                             latency_ms=0,
                             status=STATUS_ERROR,
                             error_kind=error_kind,
-                            billing_mode=BILLING_BYOK if byok_dispatch else BILLING_PLATFORM,
+                            billing_mode=_stream_billing_mode(byok_dispatch, aipass_provider),
                         )
                     await db.commit()
             with contextlib.suppress(Exception):
@@ -548,13 +653,13 @@ async def _run_turn_async(turn_id: str) -> None:
                 await record_streamed_turn_row(
                     db,
                     user_id=user_id,
-                    provider=_stream_provider_name(byok_dispatch),
-                    model=_stream_model_name(byok_dispatch),
+                    provider=_stream_provider_name(byok_dispatch, aipass_provider),
+                    model=_stream_model_name(byok_dispatch, aipass_provider),
                     cost_usd=final_cost_usd,
                     latency_ms=final_total_ms,
                     status=STATUS_OK,
                     error_kind=None,
-                    billing_mode=BILLING_BYOK if byok_dispatch else BILLING_PLATFORM,
+                    billing_mode=_stream_billing_mode(byok_dispatch, aipass_provider),
                     prompt_tokens=final_prompt_tokens,
                     completion_tokens=final_completion_tokens,
                 )
@@ -563,6 +668,11 @@ async def _run_turn_async(turn_id: str) -> None:
         with contextlib.suppress(Exception):
             await set_stream_ttl(redis_client, turn_id=turn_id)
 
+    except asyncio.CancelledError:
+        if cancelled_by_user.is_set():
+            log.info("tutor_turn_cancelled", extra={"turn_id": turn_id})
+            return
+        raise
     except Exception as exc:
         log.exception("tutor_turn_failed", extra={"turn_id": turn_id})
         # ADR-0027 §4 item 3, streaming arm (Gate-B fix): an auth-class
@@ -591,13 +701,13 @@ async def _run_turn_async(turn_id: str) -> None:
                     await record_streamed_turn_row(
                         db,
                         user_id=user_id,
-                        provider=_stream_provider_name(byok_dispatch),
-                        model=_stream_model_name(byok_dispatch),
+                        provider=_stream_provider_name(byok_dispatch, aipass_provider),
+                        model=_stream_model_name(byok_dispatch, aipass_provider),
                         cost_usd=0.0,
                         latency_ms=0,
                         status=STATUS_ERROR,
                         error_kind=type(exc).__name__,
-                        billing_mode=BILLING_BYOK if byok_dispatch else BILLING_PLATFORM,
+                        billing_mode=_stream_billing_mode(byok_dispatch, aipass_provider),
                     )
                 await db.commit()
         with contextlib.suppress(Exception):
@@ -612,6 +722,11 @@ async def _run_turn_async(turn_id: str) -> None:
         raise
 
     finally:
+        if cancel_watcher is not None:
+            cancel_watcher.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await cancel_watcher
+
         # L33 — reconcile the reservation. delta = actual - reserved.
         # On failure/abort, actual is 0 (no LLM tokens spent) so we
         # release the full reservation. On success the delta closes

@@ -8,6 +8,10 @@
 
 {$APP_DOMAIN} {
 	encode zstd gzip
+	# OAuth callbacks carry a one-time authorization code and state in the
+	# query string. The application logger records path only; skip this one
+	# Caddy access-log entry so the reverse proxy cannot persist the query.
+	log_skip /api/v1/aipass/oauth/callback
 
 	header {
 		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"

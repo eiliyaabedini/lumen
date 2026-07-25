@@ -39,7 +39,10 @@ so it must stay cheap.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
+from urllib.parse import urlsplit, urlunsplit
+
+from sentry_sdk.types import Event, Hint
 
 # Local-variable names that should be redacted across every captured
 # stack frame. Keep this list narrow — broad redaction makes the
@@ -67,6 +70,7 @@ SCRUB_URL_PREFIXES: tuple[str, ...] = (
     "/api/v1/tutor",
     "/tutor",
 )
+_AIPASS_CALLBACK_PATH = "/api/v1/aipass/oauth/callback"
 
 REDACTED = "<scrubbed by lumen.sentry_scrubber>"
 
@@ -93,6 +97,15 @@ def _scrub_request(event: dict[str, Any]) -> None:
     url = request.get("url", "")
     if not isinstance(url, str):
         return
+    try:
+        parts = urlsplit(url)
+    except ValueError:
+        parts = None
+    if parts is not None and parts.path == _AIPASS_CALLBACK_PATH:
+        request["url"] = urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+        for key in ("query_string", "query"):
+            if key in request:
+                request[key] = REDACTED
     if any(prefix in url for prefix in SCRUB_URL_PREFIXES):
         request["data"] = REDACTED
 
@@ -113,7 +126,7 @@ def _scrub_breadcrumbs(event: dict[str, Any]) -> None:
             bc["data"] = REDACTED
 
 
-def before_send(event: dict[str, Any], hint: dict[str, Any] | None = None) -> dict[str, Any]:
+def before_send(event: Event, hint: Hint | None = None) -> Event:
     """Sentry SDK ``before_send`` callable.
 
     The SDK expects ``(event, hint) -> event | None``. Returning ``None``
@@ -124,9 +137,11 @@ def before_send(event: dict[str, Any], hint: dict[str, Any] | None = None) -> di
     """
     del hint  # not consulted today
 
+    event_dict = cast(dict[str, Any], event)
+
     # Scrub captured locals across every stack frame in every
     # exception in the event.
-    exception_root = event.get("exception")
+    exception_root = event_dict.get("exception")
     if isinstance(exception_root, dict):
         for exc in exception_root.get("values", []) or []:
             if not isinstance(exc, dict):
@@ -138,7 +153,12 @@ def before_send(event: dict[str, Any], hint: dict[str, Any] | None = None) -> di
                 if isinstance(frame, dict):
                     _scrub_frame_locals(frame)
 
-    _scrub_request(event)
-    _scrub_breadcrumbs(event)
+    _scrub_request(event_dict)
+    _scrub_breadcrumbs(event_dict)
 
     return event
+
+
+def before_send_transaction(event: Event, hint: Hint | None = None) -> Event:
+    """Apply the same request scrubber to performance transactions."""
+    return before_send(event, hint)
