@@ -83,11 +83,12 @@ STATUS_BUDGET_EXCEEDED = "budget_exceeded"
 # admin surface sees the block the same way it sees a budget trip.
 STATUS_QUOTA_EXCEEDED = "quota_exceeded"
 
-# S5.4 — per-row billing attribution (FR-BYOK-27). ``platform`` rows count
-# against the platform dollar aggregates; ``byok`` rows are excluded from
-# platform-$ (the user pays their provider directly).
+# Per-row billing attribution. ``platform`` rows count against the platform
+# dollar aggregates; ``byok`` and ``aipass`` rows are user-funded and excluded
+# from platform spend. AI Pass charges the connected user's shared wallet.
 BILLING_PLATFORM = "platform"
 BILLING_BYOK = "byok"
+BILLING_AIPASS = "aipass"
 
 
 class LLMCall(IdMixin, Base):
@@ -141,6 +142,7 @@ class LLMCall(IdMixin, Base):
 
 
 __all__ = [
+    "BILLING_AIPASS",
     "BILLING_BYOK",
     "BILLING_PLATFORM",
     "STATUS_BUDGET_EXCEEDED",

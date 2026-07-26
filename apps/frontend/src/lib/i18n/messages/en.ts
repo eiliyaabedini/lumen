@@ -73,7 +73,8 @@ export const en = {
   "auth.login.subtitle": "Sign in to continue learning.",
   "auth.login.demoHeading": "Open the demo",
   "auth.login.demoSubtitle": "One click and you're inside Lumen's tutor experience.",
-  "auth.login.demoNotice": "Demo credentials are public — pre-filled and safe to share. Sign in to watch the tutor work.",
+  "auth.login.demoNotice":
+    "Demo credentials are public — pre-filled and safe to share. Sign in to watch the tutor work.",
   "auth.login.email": "Email",
   "auth.login.password": "Password",
   "auth.login.submit": "Sign in",
@@ -88,7 +89,8 @@ export const en = {
   "auth.register.fullName": "Full name",
   "auth.register.submit": "Create account",
   "auth.register.submitting": "Creating…",
-  "auth.register.passwordHint": "At least 12 characters with a mix of letters, numbers, or symbols.",
+  "auth.register.passwordHint":
+    "At least 12 characters with a mix of letters, numbers, or symbols.",
   "auth.register.successToast": "Account created — check your inbox to verify your email",
   "auth.register.error": "Could not create account",
   "auth.register.haveAccount": "Already have an account?",
@@ -132,7 +134,8 @@ export const en = {
   "catalogPage.cartouche": "Catalogue",
   "catalogPage.h1_1": "Every subject,",
   "catalogPage.h1_2": "catalogued",
-  "catalogPage.subline": "Browse what instructors across Lumen are teaching. Filter by subject, difficulty, or tag.",
+  "catalogPage.subline":
+    "Browse what instructors across Lumen are teaching. Filter by subject, difficulty, or tag.",
   "catalogPage.searchPlaceholder": "Search the catalogue…",
   "catalogPage.searchAria": "Search courses",
   "catalogPage.anyDifficulty": "Any",
@@ -151,7 +154,8 @@ export const en = {
   "home.cartouche": "Now open",
   "home.heroTitle1": "Take a path.",
   "home.heroTitle2": "Become it.",
-  "home.heroSubline": "Modern courses for the skills you actually use. Hands-on projects, live cohorts, certificates that mean something.",
+  "home.heroSubline":
+    "Modern courses for the skills you actually use. Hands-on projects, live cohorts, certificates that mean something.",
 
   // Landing replay hero (L29) — animated SSE-replay shown next to the headline
   "home.replayHeroBody":
@@ -170,11 +174,14 @@ export const en = {
   "home.pillar2.number": "02",
   "home.pillar3.number": "03",
   "home.pillar1.title": "Build real projects.",
-  "home.pillar1.body": "Every course ends in something you can show — a deployed app, an analysed dataset, a finished portfolio piece. No quizzes pretending to be skills.",
+  "home.pillar1.body":
+    "Every course ends in something you can show — a deployed app, an analysed dataset, a finished portfolio piece. No quizzes pretending to be skills.",
   "home.pillar2.title": "Learn at your pace.",
-  "home.pillar2.body": "Async lessons with per-step progress, an AI tutor that answers from the course itself, and a review queue that surfaces what to revisit next.",
+  "home.pillar2.body":
+    "Async lessons with per-step progress, an AI tutor that answers from the course itself, and a review queue that surfaces what to revisit next.",
   "home.pillar3.title": "Keep what you make.",
-  "home.pillar3.body": "MIT-licensed, self-hostable. Your courses, your data, your certificates — yours to keep forever, with or without us.",
+  "home.pillar3.body":
+    "MIT-licensed, self-hostable. Your courses, your data, your certificates — yours to keep forever, with or without us.",
   "home.scrollCartouche": "Browse the catalogue",
   "home.scrollH2": "What's being learnt right now",
   "home.allScrolls": "All courses",
@@ -267,7 +274,8 @@ export const en = {
   "notif.clearRead": "Clear read",
   "notif.cleared": "Cleared {n} read notifications",
   "notif.clearConfirm.title": "Clear read notifications?",
-  "notif.clearConfirm.body": "This permanently removes every notification you’ve already read — including ones older than the list shown. Unread notifications stay.",
+  "notif.clearConfirm.body":
+    "This permanently removes every notification you’ve already read — including ones older than the list shown. Unread notifications stay.",
   "notif.clearConfirm.confirm": "Clear read",
   "notif.clearConfirm.clearing": "Clearing…",
   "notif.clearConfirm.cancel": "Cancel",
@@ -339,12 +347,14 @@ export const en = {
   "lessonEdit.titleEdit": "Edit lesson",
   "lessonEdit.titleNew": "New lesson",
   "lessonEdit.duration": "Duration (seconds)",
-  "lessonEdit.freePreview": "Free preview (visible to non-enrolled visitors when the course is published)",
+  "lessonEdit.freePreview":
+    "Free preview (visible to non-enrolled visitors when the course is published)",
   "lessonEdit.body": "Body",
   "lessonEdit.bodyPlaceholder": "Write your lesson…",
   "lessonEdit.videoUrl": "Video URL",
   "lessonEdit.captionsUrl": "Captions URL (WebVTT, optional)",
-  "lessonEdit.captionsHelp": "Add WebVTT captions so the lesson stays accessible to deaf / hard-of-hearing learners. Default: on.",
+  "lessonEdit.captionsHelp":
+    "Add WebVTT captions so the lesson stays accessible to deaf / hard-of-hearing learners. Default: on.",
   "lessonEdit.captionsLabel": "Caption track label",
   "lessonEdit.captionsLabelPlaceholder": "English",
   "lessonEdit.captionsLang": "Language code (BCP-47)",
@@ -574,7 +584,8 @@ export const en = {
   "admin.tile.mcpClients.title": "MCP clients",
   "admin.tile.mcpClients.body": "Mint and revoke OAuth-style credentials for MCP integrations.",
   "admin.searchIndex.title": "Search index",
-  "admin.searchIndex.body": "Rebuild the search index from published courses. Runs in the background.",
+  "admin.searchIndex.body":
+    "Rebuild the search index from published courses. Runs in the background.",
   "admin.searchIndex.submit": "Reindex catalog",
   "admin.searchIndex.submitting": "Queuing…",
   "admin.searchIndex.toast": "Reindex queued",
@@ -603,7 +614,8 @@ export const en = {
   "studioEdit.statusError": "Could not update status",
   "studioEdit.publish.noLessons": "Add at least one lesson before publishing.",
   "studioEdit.publish.missingFields": "A title and overview are required to publish.",
-  "studioEdit.publish.invalidTransition": "That status change isn't allowed from the current state.",
+  "studioEdit.publish.invalidTransition":
+    "That status change isn't allowed from the current state.",
   "studioEdit.archive": "Archive",
   "studioEdit.restore": "Restore to draft",
   "studioEdit.publishedToast": "Course published (private). Use Share to list it publicly.",
@@ -621,7 +633,8 @@ export const en = {
   "studioEdit.stat.new7d": "New (7d)",
   "studioEdit.stat.new30d": "New (30d)",
   "studioEdit.detailsCard": "Course details",
-  "studioEdit.renameNotice": "Renaming regenerates the URL slug — old links to this course will redirect.",
+  "studioEdit.renameNotice":
+    "Renaming regenerates the URL slug — old links to this course will redirect.",
   "studioEdit.coverUrl": "Cover URL",
   "studioEdit.detailsToast": "Details saved",
   "studioEdit.saveError": "Could not save",
@@ -632,8 +645,10 @@ export const en = {
   "studioEdit.lessonCountOne": "{n} lesson",
   "studioEdit.dragHandle": "Drag handle",
   "studioEdit.editLessons": "Edit lessons",
-  "studioEdit.dragTip": "Tip: drag the handle to reorder modules. Click the gear to edit a module's lessons.",
-  "studioEdit.outcomesHelp": "Up to 12 short phrases (each ≤240 chars). Shows above the syllabus on the course detail page as a checkmark grid.",
+  "studioEdit.dragTip":
+    "Tip: drag the handle to reorder modules. Click the gear to edit a module's lessons.",
+  "studioEdit.outcomesHelp":
+    "Up to 12 short phrases (each ≤240 chars). Shows above the syllabus on the course detail page as a checkmark grid.",
   "studioEdit.outcomePlaceholder": "Outcome #{n}",
   "studioEdit.remove": "Remove",
   "studioEdit.addOutcome": "Add outcome",
@@ -717,7 +732,8 @@ export const en = {
   // Course detail page
   "courseDetail.cartouche": "Course",
   "courseDetail.notFound": "Course not found.",
-  "courseDetail.notFoundBody": "We couldn't find that course. It might be unpublished or the link may have changed.",
+  "courseDetail.notFoundBody":
+    "We couldn't find that course. It might be unpublished or the link may have changed.",
   "courseDetail.browseCatalog": "Browse the catalog",
   "courseDetail.certError": "Couldn't download the certificate.",
   "courseDetail.instructor": "Instructor",
@@ -749,7 +765,8 @@ export const en = {
   "confirmEmail.success": "Your email is now {email}. Use that address next time you sign in.",
   "confirmEmail.successToast": "Email updated. Sign in with the new address.",
   "confirmEmail.invalid": "This confirmation link is invalid or has expired.",
-  "confirmEmail.stale": "This link is stale — you rotated your password after requesting the change.",
+  "confirmEmail.stale":
+    "This link is stale — you rotated your password after requesting the change.",
   "confirmEmail.taken": "That email is now in use by another account.",
   "confirmEmail.generic": "Could not confirm",
   "confirmEmail.missingToken": "Missing token",
@@ -769,13 +786,15 @@ export const en = {
   "verifyCert.signatureInvalid": "Signature invalid",
   "verifyCert.openCredential": "Open credential JSON",
   "verifyCert.ob3Title": "Verifiable credential",
-  "verifyCert.ob3Body": "This certificate is also available as a signed Open Badges 3.0 credential.",
+  "verifyCert.ob3Body":
+    "This certificate is also available as a signed Open Badges 3.0 credential.",
 
   // Profile — your inscription
   "profile.cartouche": "Settings",
   "profile.badge.verified": "verified",
   "profile.badge.unverified": "unverified",
-  "profile.banner.unverified": "Your email isn't verified yet — check your inbox or resend the link.",
+  "profile.banner.unverified":
+    "Your email isn't verified yet — check your inbox or resend the link.",
   "profile.banner.resend": "Resend",
   "profile.section.profile": "Profile",
   "profile.section.profileDesc": "How others see you on Lumen.",
@@ -789,13 +808,15 @@ export const en = {
   "profile.password.submit": "Update password",
   "profile.password.submitting": "Updating…",
   "profile.section.email": "Change email",
-  "profile.section.emailDesc": "We'll send a confirmation link to the new address. The change doesn't take effect until you click it, and all your other sessions will be signed out for security.",
+  "profile.section.emailDesc":
+    "We'll send a confirmation link to the new address. The change doesn't take effect until you click it, and all your other sessions will be signed out for security.",
   "profile.field.currentEmail": "Current email",
   "profile.field.newEmail": "New email",
   "profile.email.submit": "Send confirmation link",
   "profile.email.submitting": "Sending…",
   "profile.export.title": "Download my data",
-  "profile.export.description": "Get a JSON copy of your profile and activity counts. Useful for keeping a record before you leave, or just curiosity.",
+  "profile.export.description":
+    "Get a JSON copy of your profile and activity counts. Useful for keeping a record before you leave, or just curiosity.",
   "profile.export.button": "Download as JSON",
   "profile.export.busy": "Preparing…",
   "profile.export.toast": "Your data has been downloaded.",
@@ -816,7 +837,8 @@ export const en = {
   "profile.toast.saveError": "Could not save",
   "profile.toast.passwordChanged": "Password changed. Sign in again to refresh sessions.",
   "profile.toast.passwordError": "Could not change password",
-  "profile.toast.emailChangeSent": "We sent a confirmation link to {email}. Click it within an hour.",
+  "profile.toast.emailChangeSent":
+    "We sent a confirmation link to {email}. Click it within an hour.",
   "profile.toast.emailError": "Could not start email change",
   "profile.toast.deleted": "Account deleted",
   "profile.toast.deleteError": "Could not delete account",
@@ -825,7 +847,8 @@ export const en = {
 
   // Notification preferences (Phase D4)
   "prefs.notifications.title": "Notifications",
-  "prefs.notifications.description": "Choose how each kind of notification reaches you. Defaults to the bell only.",
+  "prefs.notifications.description":
+    "Choose how each kind of notification reaches you. Defaults to the bell only.",
   "prefs.notifications.save": "Save preferences",
   "prefs.notifications.saving": "Saving…",
   "prefs.notifications.savedToast": "Notification preferences updated",
@@ -897,16 +920,14 @@ export const en = {
   // Brief review
   "define.review.cartouche": "Review",
   "define.review.title": "Review your brief",
-  "define.review.subtitle":
-    "Tweak anything below, then build. Nothing happens until you confirm.",
+  "define.review.subtitle": "Tweak anything below, then build. Nothing happens until you confirm.",
   "define.review.goalSummary": "Goal",
   "define.review.level": "Level",
   "define.review.levelUnset": "Not set",
   "define.review.timeBudget": "Time budget (hours)",
   "define.review.sessions": "Sessions / week",
   "define.review.outcomes": "What you'll be able to do",
-  "define.review.estimate":
-    "Estimated course: about {modules} modules · {lessons} lessons.",
+  "define.review.estimate": "Estimated course: about {modules} modules · {lessons} lessons.",
   "define.review.privateNote":
     "A private course will be created — only you can see it until you choose to share it.",
   "define.review.build": "Build my course",
@@ -934,8 +955,7 @@ export const en = {
     "We've reached the question limit. Review your brief and build your course.",
   "define.error.buildInFlight":
     "A build is already running for this brief. Please wait for it to finish.",
-  "define.error.buildQuota":
-    "You've reached today's build limit. Please try again tomorrow.",
+  "define.error.buildQuota": "You've reached today's build limit. Please try again tomorrow.",
   "define.error.buildFailed":
     "The build didn't complete. No partial course was kept — you can try again.",
   "define.error.briefFinalized": "This brief is already finalized.",
@@ -1005,7 +1025,8 @@ export const en = {
   "mastery.weakSpots.empty.body":
     "Take a quiz or ask the tutor a question and lessons that need a second look will appear here.",
   "mastery.courses.heading": "Mastery per course",
-  "mastery.courses.caption": "Mastery tracks your quiz performance; completion tracks lessons finished. They move independently — an all-reading course can be 100% complete with 0% mastery.",
+  "mastery.courses.caption":
+    "Mastery tracks your quiz performance; completion tracks lessons finished. They move independently — an all-reading course can be 100% complete with 0% mastery.",
   "mastery.courses.completion": "Completion",
   "mastery.courses.mastery": "Mastery",
   "mastery.courses.empty": "You're not enrolled in anything yet.",
@@ -1047,7 +1068,8 @@ export const en = {
   // AI-assisted authoring (Phase E2) — outline generator + per-lesson assist
   "studio.aiOutline.button": "Generate with AI",
   "ai.outline.title": "Generate course with AI",
-  "ai.outline.subtitle": "Describe what you want to teach and we will propose a structure. Nothing is saved until you click Create.",
+  "ai.outline.subtitle":
+    "Describe what you want to teach and we will propose a structure. Nothing is saved until you click Create.",
   "ai.outline.briefLabel": "Brief",
   "ai.outline.briefPlaceholder": "Describe what you want to teach in 1-2 paragraphs…",
   "ai.outline.modulesLabel": "Target modules",
@@ -1116,17 +1138,14 @@ export const en = {
   "eval.headline": "How the tutor scores. Receipts only.",
   "eval.subline":
     "Lumen's tutor is graded against golden datasets via an LLM-as-judge, and against a 15-probe adversarial corpus by a string-match refusal heuristic. This page is frozen on admin-promoted runs.",
-  "eval.sealedRunPending":
-    "First sealed run pending — ships with the streaming-flag flip",
+  "eval.sealedRunPending": "First sealed run pending — ships with the streaming-flag flip",
   "eval.sealedRunLive": "Sealed run",
-  "eval.suites.deltaCaption":
-    "Δ = Lumen score − baseline score; positive favours Lumen",
+  "eval.suites.deltaCaption": "Δ = Lumen score − baseline score; positive favours Lumen",
   "eval.suites.judge": "Judge",
   "eval.suites.caveat":
     "v1 measurement, small sample, single LLM-as-judge. Real-world signal beats this microbenchmark — see the methodology page for the caveats.",
   "eval.workedExample.cartouche": "Worked example",
-  "eval.workedExample.heading":
-    "The canonical demo question, end-to-end.",
+  "eval.workedExample.heading": "The canonical demo question, end-to-end.",
   "eval.workedExample.questionLabel": "Question",
   "eval.workedExample.toolPathLabel": "Expected tool path",
   "eval.workedExample.measurementLabel": "Measurement",
@@ -1140,10 +1159,8 @@ export const en = {
   "eval.adversarial.heading": "Refusal rate, 15-probe corpus.",
   "eval.adversarial.body":
     "Prompt-injection + system-prompt-extraction + jailbreak + out-of-scope + indirect-injection categories. The corpus is in-repo for audit; per-result outputs are NOT disclosed here — that would just be a roadmap of things to try.",
-  "eval.adversarial.measurementPending":
-    "Refusal-rate published with the first sealed run.",
-  "eval.footer.body":
-    "Want the methodology, the corpus shape, or to talk shop?",
+  "eval.adversarial.measurementPending": "Refusal-rate published with the first sealed run.",
+  "eval.footer.body": "Want the methodology, the corpus shape, or to talk shop?",
   "eval.footer.methodology": "Methodology",
   "eval.footer.contact": "Email me",
 
@@ -1170,7 +1187,7 @@ export const en = {
   "evalMethodology.how.intro":
     "Each (question, answer) pair is sent to a judge LLM with the gold answer and a per-axis rubric. The judge returns a 0-5 score per axis plus a short rationale. Both the rubric and the gold answers ship in `apps/backend/evals/<suite>/dataset.jsonl` so the reader can audit what we asked for.",
   "evalMethodology.how.judge":
-    "The judge is metered through the same H1 cost-tracking wrapper the user-facing tutor uses — eval traffic shows up in `/admin/llm-calls` under `feature=\"eval.judge\"`. That keeps an operator honest about how much it cost to produce the headline number.",
+    'The judge is metered through the same H1 cost-tracking wrapper the user-facing tutor uses — eval traffic shows up in `/admin/llm-calls` under `feature="eval.judge"`. That keeps an operator honest about how much it cost to produce the headline number.',
   "evalMethodology.how.bias":
     "LLM-as-judge has known biases (preferring its own model family, rewarding verbosity, missing subtle factual errors). Mitigation: prompts are fixed in-repo; the judge model is named on the report; results below 70% inter-judge agreement on a held-out set get rerun by a second model.",
   "evalMethodology.adv.cartouche": "Adversarial corpus",
@@ -1213,19 +1230,17 @@ export const en = {
   "caseStudy.origin.p1":
     "I started Lumen in November 2020 as a Django side-project — a learning platform for myself. Five years and one model revolution later, the original prototype is gone and what remains is the question: can an agent actually teach? Not just summarize and quote.",
   "caseStudy.origin.p2":
-    "So I rebuilt it. Custom orchestrator, no LangChain. Groq Llama 3.3 for the latency-per-dollar that makes \"watch it think\" real. Public evals so you can audit the agent's competence yourself.",
+    'So I rebuilt it. Custom orchestrator, no LangChain. Groq Llama 3.3 for the latency-per-dollar that makes "watch it think" real. Public evals so you can audit the agent\'s competence yourself.',
   "caseStudy.origin.p3":
     "Lumen runs on AWS t4g.small (Graviton2 ARM, 2 vCPU + 2 GB RAM). The cost ceiling is a feature, not an apology — it forced every architectural decision to defend itself against a finite LLM-spend budget.",
   "caseStudy.arch.cartouche": "Architecture",
   "caseStudy.arch.heading": "Six boxes, two protocols.",
-  "caseStudy.arch.intro":
-    "The whole thing runs in one docker-compose stack on a single VM:",
+  "caseStudy.arch.intro": "The whole thing runs in one docker-compose stack on a single VM:",
   "caseStudy.arch.notes":
     "Two protocols thread it together. HTTP / fetch for the request-response surfaces. Server-Sent Events for the tutor stream (Redis Streams as the buffer between the Celery worker that does the LLM call and the FastAPI process holding the open SSE connection — pub/sub couldn't have done it because resume on disconnect needs replay).",
   "caseStudy.turn.cartouche": "Anatomy of one turn",
   "caseStudy.turn.heading": "Five steps. Each one is cheap because it has to be.",
-  "caseStudy.turn.intro":
-    "When a learner hits Send, this happens:",
+  "caseStudy.turn.intro": "When a learner hits Send, this happens:",
   "caseStudy.turn.step1":
     "POST /tutor/turns inserts a `tutor_turn_jobs` row + reserves an estimated cost via an atomic Redis-Lua script. `after_commit` event fires the Celery enqueue (try/except — broker-down doesn't 500 the POST).",
   "caseStudy.turn.step2":
@@ -1233,7 +1248,7 @@ export const en = {
   "caseStudy.turn.step3":
     "Orchestrator runs: embedding → retriever → optional code_runner / web_searcher → synth. Each tool emits an event into the Redis Stream the browser is subscribed to.",
   "caseStudy.turn.step4":
-    "Synth streams tokens via `stream_options={\"include_usage\": True}` — first-token-ms drops on the first chunk; cost is reconciled exactly via the include_usage payload (no estimation drift).",
+    'Synth streams tokens via `stream_options={"include_usage": True}` — first-token-ms drops on the first chunk; cost is reconciled exactly via the include_usage payload (no estimation drift).',
   "caseStudy.turn.step5":
     "Terminal: `turn_complete` event into Redis; DB row marks `complete` (with a WHERE clause that refuses to overwrite `aborted` — a real cancellation race I caught via Codex rescue).",
   "caseStudy.turn.tail":
@@ -1241,7 +1256,7 @@ export const en = {
   "caseStudy.prompt.cartouche": "Prompt iteration",
   "caseStudy.prompt.heading": "Two failure modes, two rewrites.",
   "caseStudy.prompt.p1":
-    "Iteration 1: a single 800-word system prompt that tried to do everything. Refused too aggressively (the model interpreted \"stay in scope\" as \"refuse anything off-topic-ish\"). Refusal-rate against legitimate questions was 18%.",
+    'Iteration 1: a single 800-word system prompt that tried to do everything. Refused too aggressively (the model interpreted "stay in scope" as "refuse anything off-topic-ish"). Refusal-rate against legitimate questions was 18%.',
   "caseStudy.prompt.p2":
     "Iteration 4: split into a planner prompt + per-sub-agent prompts. Planner picks tools; sub-agents have one job each. The synth prompt has its own scope rules. Legitimate-question refusal dropped to 3%; adversarial-prompt refusal stayed >90%.",
   "caseStudy.prompt.p3":
@@ -1261,7 +1276,7 @@ export const en = {
   "caseStudy.lessons.cartouche": "Lessons",
   "caseStudy.lessons.heading": "What I'd do differently next time.",
   "caseStudy.lessons.p1":
-    "Invest in the eval loop first. Two weeks of \"is this prompt better than that one?\" hand-review would have been replaced by a 30-minute eval run. I did this in reverse: shipped a tutor that worked, then bolted on the eval harness. The right order is the other way around.",
+    'Invest in the eval loop first. Two weeks of "is this prompt better than that one?" hand-review would have been replaced by a 30-minute eval run. I did this in reverse: shipped a tutor that worked, then bolted on the eval harness. The right order is the other way around.',
   "caseStudy.lessons.p2":
     "Pick the streaming substrate carefully. Redis Streams was the right call for resume-on-disconnect; pub/sub looked tempting on day one and would have meant rewriting the SSE handler at deploy time.",
   "caseStudy.lessons.p3":
@@ -1274,8 +1289,7 @@ export const en = {
 
   // Cost-cap closing CTA (L23 — fires when the demo budget is exhausted)
   "tutor.costCap.cartouche": "Demo budget reached",
-  "tutor.costCap.headline":
-    "You’ve used today’s share of the demo budget.",
+  "tutor.costCap.headline": "You’ve used today’s share of the demo budget.",
   "tutor.costCap.body":
     "This is Lumen running on a real LLM budget — each turn costs a few cents and the demo caps spend so it can survive a hug of death. Try again later, or get in touch directly.",
   "tutor.costCap.resetsIn": "Resets in ~{hours}h",
@@ -1285,12 +1299,15 @@ export const en = {
   // Blog (L19.5 — empty index; posts arrive with L30 case-study work)
   "blog.cartouche": "Field notes",
   "blog.title": "Notes from building Lumen",
-  "blog.subline": "Architecture decisions, prompt-iteration journals, and the failures that shaped what shipped.",
+  "blog.subline":
+    "Architecture decisions, prompt-iteration journals, and the failures that shaped what shipped.",
   "blog.empty.title": "No posts yet.",
-  "blog.empty.body": "The first entries will trail the case study — design choices behind the agent tutor, the eval methodology, and the cost-latency math.",
+  "blog.empty.body":
+    "The first entries will trail the case study — design choices behind the agent tutor, the eval methodology, and the cost-latency math.",
 
   // BYOK — bring-your-own-key model config (S5 / ADR-0027 §Frontend)
-  "byok.unavailable": "Bring-your-own-key is not available right now. Your tutor runs on the free platform model.",
+  "byok.unavailable":
+    "Bring-your-own-key is not available right now. Your tutor runs on the free platform model.",
   "byok.title": "Your model",
   "byok.subtitle": "Use your own AI provider and key instead of the free platform model.",
   "byok.provider": "Provider",
@@ -1314,6 +1331,27 @@ export const en = {
   "byok.error.providerError": "Your provider rejected the request. Check your key.",
   "byok.error.rateLimited": "Too many validation attempts. Try again later.",
   "byok.quota.exceeded": "You've reached your request limit for now.",
+
+  // AI Pass — optional OAuth account connection
+  "aipass.title": "Connect AI Pass",
+  "aipass.description":
+    "Connect your AI Pass account for tutor requests using its shared wallet—no API key needed.",
+  "aipass.connect": "Connect AI Pass",
+  "aipass.connected": "Connected",
+  "aipass.connectedNow": "AI Pass connected.",
+  "aipass.callbackError": "AI Pass could not be connected. Please try again.",
+  "aipass.reconnect": "Reconnect required",
+  "aipass.reconnectAction": "Reconnect AI Pass",
+  "aipass.disconnect": "Disconnect AI Pass",
+  "aipass.disconnected": "AI Pass disconnected.",
+  "aipass.active": "Use for tutor requests",
+  "aipass.model": "AI Pass model",
+  "aipass.modelChoose": "Choose a model",
+  "aipass.modelsLoading": "Loading live models…",
+  "aipass.modelsLive": "Models are loaded live from AI Pass.",
+  "aipass.modelSaved": "AI Pass model selected.",
+  "aipass.unavailable": "AI Pass connection is not available on this deployment.",
+  "aipass.error": "The AI Pass request could not be completed.",
 
   // Studio two-control publish + share (S2.12 / ADR-0026)
   "studio.lifecycle.draft": "Draft",

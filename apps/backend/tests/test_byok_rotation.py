@@ -10,12 +10,14 @@ from __future__ import annotations
 
 import base64
 import os
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import func, select
 
 from app.core import secrets_crypto
 from app.core.config import get_settings
+from app.models.aipass_connection import AIPassConnection, AIPassOAuthTransaction
 from app.models.audit import AuditEvent
 from app.models.user_llm_credential import UserLLMCredential
 from app.services import llm_credentials as svc
@@ -92,6 +94,44 @@ async def test_rotation_rewraps_dek_only(db_session, make_user, monkeypatch, _ke
     assert len(events) == 1
     assert events[0].data["rotated"] == 2
     assert PLAINTEXT not in str(events[0].data)
+
+
+@pytest.mark.asyncio
+async def test_rotation_includes_aipass_tokens_and_pkce_verifiers(
+    db_session, make_user, monkeypatch, _kek_v1
+) -> None:
+    user = await make_user(email="aipass-rotation@lumen.test")
+    token_plaintext = b'{"access_token":"rotation-access","refresh_token":"rotation-refresh"}'
+    verifier_plaintext = b"rotation-pkce-verifier"
+    connection = AIPassConnection(
+        user_id=user.id,
+        enc_token_bundle=secrets_crypto.encrypt(token_plaintext),
+        key_version=1,
+        subject_hash="a" * 64,
+        token_expires_at=datetime.now(UTC) + timedelta(hours=1),
+        scope="api:access",
+    )
+    transaction = AIPassOAuthTransaction(
+        user_id=user.id,
+        state_hash="b" * 64,
+        browser_nonce_hash="c" * 64,
+        enc_code_verifier=secrets_crypto.encrypt(verifier_plaintext),
+        key_version=1,
+        expires_at=datetime.now(UTC) + timedelta(minutes=10),
+    )
+    db_session.add_all([connection, transaction])
+    await db_session.commit()
+
+    _set_v2_active(monkeypatch)
+    rotated, skipped = await svc.rotate_master_key(db_session)
+
+    assert (rotated, skipped) == (2, 0)
+    await db_session.refresh(connection)
+    await db_session.refresh(transaction)
+    assert connection.key_version == 2
+    assert transaction.key_version == 2
+    assert secrets_crypto.decrypt(connection.enc_token_bundle) == token_plaintext
+    assert secrets_crypto.decrypt(transaction.enc_code_verifier) == verifier_plaintext
 
 
 @pytest.mark.asyncio

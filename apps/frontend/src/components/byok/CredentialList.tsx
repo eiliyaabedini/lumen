@@ -27,13 +27,16 @@ export function CredentialList({ credentials }: { credentials: LLMCredentialPubl
   const t = useT();
   const { token } = useAuth();
   const qc = useQueryClient();
-  const invalidate = () => qc.invalidateQueries({ queryKey: qk.llmCredentials });
+  const invalidate = async () => {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: qk.llmCredentials }),
+      qc.invalidateQueries({ queryKey: qk.aipassStatus }),
+    ]);
+  };
 
   const patch = useMutation({
-    mutationFn: (vars: {
-      provider: string;
-      body: { enabled?: boolean; is_active?: boolean };
-    }) => LLMCredentials.patch(vars.provider, vars.body, token ?? undefined),
+    mutationFn: (vars: { provider: string; body: { enabled?: boolean; is_active?: boolean } }) =>
+      LLMCredentials.patch(vars.provider, vars.body, token ?? undefined),
     onSuccess: () => void invalidate(),
   });
 
@@ -46,7 +49,7 @@ export function CredentialList({ credentials }: { credentials: LLMCredentialPubl
   });
 
   if (credentials.length === 0) {
-    return <p className="text-sm text-muted-foreground">{t("byok.empty")}</p>;
+    return <p className="text-muted-foreground text-sm">{t("byok.empty")}</p>;
   }
 
   return (
@@ -54,7 +57,7 @@ export function CredentialList({ credentials }: { credentials: LLMCredentialPubl
       {credentials.map((c) => (
         <li
           key={c.provider}
-          className="grid gap-3 rounded-lg border border-border p-4"
+          className="border-border grid gap-3 rounded-lg border p-4"
           data-testid={`byok-cred-${c.provider}`}
         >
           <NeedsAttentionBanner status={c.last_validation_status} />
@@ -63,7 +66,7 @@ export function CredentialList({ credentials }: { credentials: LLMCredentialPubl
               <span className="font-medium">
                 {c.provider} · {c.model}
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-muted-foreground text-xs">
                 ••••{c.last4}{" "}
                 <Badge variant="secondary">{t(STATUS_KEY[c.last_validation_status])}</Badge>
               </span>
@@ -84,7 +87,9 @@ export function CredentialList({ credentials }: { credentials: LLMCredentialPubl
             <label className="flex cursor-pointer items-center gap-2 text-sm">
               <Switch
                 checked={c.enabled}
-                onCheckedChange={(enabled) => patch.mutate({ provider: c.provider, body: { enabled } })}
+                onCheckedChange={(enabled) =>
+                  patch.mutate({ provider: c.provider, body: { enabled } })
+                }
                 aria-label={t("byok.enabled")}
               />
               {t("byok.enabled")}

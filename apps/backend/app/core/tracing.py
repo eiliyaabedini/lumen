@@ -84,7 +84,7 @@ def init_tracing(app=None) -> None:
                 # Don't span the metrics scrape — it's the loudest
                 # endpoint and traces of "Prometheus pulled metrics"
                 # add noise without signal.
-                excluded_urls="/metrics,/",
+                excluded_urls="/metrics,/,/api/v1/aipass/oauth/callback",
             )
         except Exception as exc:
             log.debug("fastapi_instrument_skipped", error=str(exc))

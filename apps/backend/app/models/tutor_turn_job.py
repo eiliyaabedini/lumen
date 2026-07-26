@@ -98,6 +98,12 @@ class TutorTurnJob(IdMixin, TimestampMixin, Base):
     credential_id: Mapped[str | None] = mapped_column(
         ForeignKey("user_llm_credentials.id", ondelete="SET NULL"), nullable=True
     )
+    # AI Pass mirrors the BYOK initiation-locus rule: the worker carries only
+    # this opaque server-side row id, never an OAuth access/refresh token.
+    # Deliberately no FK: disconnect deletes the connection, but queued work
+    # must retain this marker and fail closed instead of falling through to
+    # the platform provider after ON DELETE SET NULL.
+    aipass_connection_id: Mapped[str | None] = mapped_column(String(21), nullable=True)
 
     user: Mapped[User] = relationship()
 

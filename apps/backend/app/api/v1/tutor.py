@@ -416,6 +416,12 @@ async def post_message(
     # bucket as streaming) — a user can't stack a legacy + streaming
     # turn to dodge the limit.
     settings = get_settings()
+    ctx = await byok_service.resolve_context(db, user_id=user.id, allow_aipass=True)
+    # AI Pass has no platform-fallback consent path: its spend belongs to the
+    # connected wallet, so the platform dollar reservation must not block it.
+    # Preserve BYOK's existing reservation because it may consent-fallback.
+    user_funded = ctx.aipass_connection_id is not None
+    reserved_microcents = 0
     client_ip = request.client.host if request.client else "unknown"
     redis_client = redis.Redis.from_url(settings.redis_url, decode_responses=False)
     user_concurrency_key = f"concurrent:user:{user.id}"
@@ -428,25 +434,27 @@ async def post_message(
         if not conc_ok:
             raise TutorConcurrencyLimitError("Too many concurrent tutor turns for this user.")
 
-        reserve_ok, reserve_tag = await reserve_cost(
-            redis_client,
-            user_key=f"cost:user:{user.id}",
-            ip_key=f"cost:ip:{client_ip}",
-            global_key="cost:global",
-            estimate_microcents=settings.tutor_estimate_microcents,
-            max_user_microcents=settings.tutor_cap_user_microcents,
-            max_ip_microcents=settings.tutor_cap_ip_microcents,
-            max_global_microcents=settings.tutor_cap_global_microcents,
-        )
-        if not reserve_ok:
-            await release_concurrency(redis_client, user_key=user_concurrency_key)
-            if reserve_tag == "user_cap":
-                raise TutorUserCapError("Per-user cost cap reached.")
-            if reserve_tag == "ip_cap":
-                raise TutorIpCapError("Per-IP cost cap reached.")
-            if reserve_tag == "global_cap":
-                raise TutorGlobalCapError("Global cost cap reached for the day.")
-            raise TutorUserCapError(f"reservation rejected: {reserve_tag}")
+        if not user_funded:
+            reserve_ok, reserve_tag = await reserve_cost(
+                redis_client,
+                user_key=f"cost:user:{user.id}",
+                ip_key=f"cost:ip:{client_ip}",
+                global_key="cost:global",
+                estimate_microcents=settings.tutor_estimate_microcents,
+                max_user_microcents=settings.tutor_cap_user_microcents,
+                max_ip_microcents=settings.tutor_cap_ip_microcents,
+                max_global_microcents=settings.tutor_cap_global_microcents,
+            )
+            if not reserve_ok:
+                await release_concurrency(redis_client, user_key=user_concurrency_key)
+                if reserve_tag == "user_cap":
+                    raise TutorUserCapError("Per-user cost cap reached.")
+                if reserve_tag == "ip_cap":
+                    raise TutorIpCapError("Per-IP cost cap reached.")
+                if reserve_tag == "global_cap":
+                    raise TutorGlobalCapError("Global cost cap reached for the day.")
+                raise TutorUserCapError(f"reservation rejected: {reserve_tag}")
+            reserved_microcents = settings.tutor_estimate_microcents
     finally:
         # Don't close redis_client here — we need it for the
         # reconcile/release path in the post-LLM block.
@@ -462,7 +470,7 @@ async def post_message(
     # the reservation on any failure. Without this, an exception
     # between the reservation and the orchestrator's inner try-block
     # would leak the reservation until its 24h TTL.
-    reserved_usd = Decimal(settings.tutor_estimate_microcents) / Decimal(USD_TO_MICROCENTS)
+    reserved_usd = Decimal(reserved_microcents) / Decimal(USD_TO_MICROCENTS)
     try:
         turn = await create_turn(
             db,
@@ -484,7 +492,7 @@ async def post_message(
             user_id=user.id,
             client_ip=client_ip,
             user_concurrency_key=user_concurrency_key,
-            reserved_microcents=settings.tutor_estimate_microcents,
+            reserved_microcents=reserved_microcents,
             actual_microcents=0,
         )
         with contextlib.suppress(Exception):
@@ -541,7 +549,6 @@ async def post_message(
         # S5.12/DR-8: resolve the foreground BYOK context for the acting
         # user; the orchestrator threads it through every LLM call so a
         # user-initiated tutor turn runs on the user's key end-to-end.
-        ctx = await byok_service.resolve_context(db, user_id=user.id)
         result, orch = await tutor_service.ask_with_trace(
             db,
             course=course,
@@ -568,7 +575,7 @@ async def post_message(
             user_id=user.id,
             client_ip=client_ip,
             user_concurrency_key=user_concurrency_key,
-            reserved_microcents=settings.tutor_estimate_microcents,
+            reserved_microcents=reserved_microcents,
             actual_microcents=0,
         )
         with contextlib.suppress(Exception):
@@ -616,8 +623,8 @@ async def post_message(
         user_id=user.id,
         client_ip=client_ip,
         user_concurrency_key=user_concurrency_key,
-        reserved_microcents=settings.tutor_estimate_microcents,
-        actual_microcents=settings.tutor_estimate_microcents,
+        reserved_microcents=reserved_microcents,
+        actual_microcents=reserved_microcents,
     )
     with contextlib.suppress(Exception):
         await redis_client.aclose()
@@ -662,14 +669,15 @@ async def _release_legacy_reservation(
     delta — when actual is 0 (failure / refusal), the delta is
     negative, which releases the full reservation.
     """
-    delta = actual_microcents - reserved_microcents
-    with contextlib.suppress(Exception):
-        await reconcile_cost(
-            redis_client,
-            user_key=f"cost:user:{user_id}",
-            ip_key=f"cost:ip:{client_ip}",
-            global_key="cost:global",
-            delta_microcents=delta,
-        )
+    if reserved_microcents > 0 or actual_microcents > 0:
+        delta = actual_microcents - reserved_microcents
+        with contextlib.suppress(Exception):
+            await reconcile_cost(
+                redis_client,
+                user_key=f"cost:user:{user_id}",
+                ip_key=f"cost:ip:{client_ip}",
+                global_key="cost:global",
+                delta_microcents=delta,
+            )
     with contextlib.suppress(Exception):
         await release_concurrency(redis_client, user_key=user_concurrency_key)

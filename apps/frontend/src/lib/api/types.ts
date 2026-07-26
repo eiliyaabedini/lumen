@@ -45,12 +45,7 @@ export type Difficulty = "beginner" | "intermediate" | "advanced";
 // Hand-written (DR-5: never `make api-client`). Visibility = owner-controlled
 // sharing intent; ModerationState = admin/system authority axis (ADR-0026).
 export type Visibility = "private" | "public";
-export type ModerationState =
-  | "none"
-  | "pending_review"
-  | "approved"
-  | "rejected"
-  | "delisted";
+export type ModerationState = "none" | "pending_review" | "approved" | "rejected" | "delisted";
 
 /**
  * Structured clone provenance (ADR-0028 §Schemas / FR-CLONE-10). Hand-written
@@ -212,12 +207,7 @@ export interface LLMProviderRegistry {
   byok_enabled: boolean;
 }
 
-export type LLMValidationStatus =
-  | "unvalidated"
-  | "valid"
-  | "invalid"
-  | "error"
-  | "needs_attention";
+export type LLMValidationStatus = "unvalidated" | "valid" | "invalid" | "error" | "needs_attention";
 
 /** Masked credential read shape. NEVER carries the key / enc_* fields. */
 export interface LLMCredentialPublic {
@@ -235,6 +225,25 @@ export interface LLMCredentialPublic {
 export interface LLMCredentialValidateResult {
   status: LLMValidationStatus;
   message: string;
+}
+
+// ---------- AI Pass OAuth account connection ----------
+
+export interface AIPassStatus {
+  available: boolean;
+  connected: boolean;
+  active: boolean;
+  model: string | null;
+  status: "unavailable" | "disconnected" | "connected" | "reauth_required";
+}
+
+export interface AIPassModel {
+  id: string;
+  name: string;
+}
+
+export interface AIPassModels {
+  models: AIPassModel[];
 }
 
 // ---------- Admin moderation + lifecycle (S6) — hand-written per DR-5 ----------

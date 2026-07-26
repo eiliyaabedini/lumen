@@ -41,13 +41,16 @@ from __future__ import annotations
 import asyncio
 import time
 from collections.abc import AsyncIterator
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
 from app.core.logging import get_logger
 from app.services import byok as byok_service
 from app.services.llm import ChatMessage
 from app.services.llm_stream import stream_chat
 from app.services.tutor_subagents.retriever import RetrieverChunk
+
+if TYPE_CHECKING:
+    from app.services.aipass_client import AIPassProvider
 
 log = get_logger(__name__)
 
@@ -110,6 +113,7 @@ async def orchestrate_stream(
     retrieved_chunks: list[RetrieverChunk] | None = None,
     retrieval_latency_ms: int | None = None,
     byok_dispatch: dict[str, str] | None = None,
+    aipass_provider: AIPassProvider | None = None,
 ) -> AsyncIterator[StreamEvent]:
     """Yield a stream of events for a tutor turn.
 
@@ -176,7 +180,15 @@ async def orchestrate_stream(
     prompt_tokens = 0
     completion_tokens = 0
     try:
-        async for chunk in stream_chat(messages, byok_dispatch=byok_dispatch):
+        if aipass_provider is None:
+            chunks = stream_chat(messages, byok_dispatch=byok_dispatch)
+        else:
+            chunks = stream_chat(
+                messages,
+                byok_dispatch=byok_dispatch,
+                aipass_provider=aipass_provider,
+            )
+        async for chunk in chunks:
             if chunk.done:
                 total_cost_usd = float(chunk.usage.get("cost_usd", 0.0) or 0.0)
                 prompt_tokens = int(chunk.usage.get("prompt_tokens", 0) or 0)

@@ -33,6 +33,7 @@ A **learner-owned, two-role e-learning platform** — every signed-in user runs 
 | **Share** | Publishing stays private; public listing is an explicit share + admin moderation state machine with an immutable audit trail |
 | **Clone** | Any listed course can be remixed into your own draft, with server-written "Based on …" provenance and a sanitized export (no enrollments, traces, or soft-deleted content) |
 | **BYOK** | Bring your own model key (OpenAI / Anthropic / Groq / Mistral) — allowlisted providers, server-owned base URLs, envelope-encrypted write-only keys |
+| **AI Pass** | Optionally connect an AI Pass account over OAuth and use its live models with the learner's shared wallet — no API key field |
 
 Shipped to production as **2.0.0-two-role** ([CHANGELOG](CHANGELOG.md)) — built as a gated waterfall: requirements → design → 6 ADRs → seven build streams, each cleared a Codex challenge, an independent Claude review, and a live in-browser walk before merge.
 
@@ -113,6 +114,49 @@ Or for Claude Code: `LUMEN_MCP_AUTH_TOKEN=<secret> claude mcp add lumen -- pytho
 
 Per-credential 256-bit DEKs wrapped by a versioned server KEK ([`secrets_crypto.py`](apps/backend/app/core/secrets_crypto.py)); decryption only inside the dispatch path — never in logs, traces, exports, or admin views. A [prod boot guard](apps/backend/app/core/prod_guards.py) refuses to start with stored credentials but no real KEK (ADR-0027). Request-count quotas close the `$0`-BYOK bypass of the dollar budget guard.
 
+### Connect AI Pass without provider API keys
+
+The optional AI Pass integration uses Authorization Code + PKCE and keeps its
+access/refresh tokens encrypted in FastAPI/Postgres; browser JavaScript receives
+connection metadata only. Models are discovered live from the connected
+account, and chat runs from the API or worker against the learner's shared AI
+Pass wallet for tutor requests. Other platform and BYOK dispatch paths remain
+unchanged. Users click **Connect AI Pass**; they do not provide a provider API
+key, and spend comes from their own AI Pass wallet.
+
+#### Try it / Use your own client
+
+For evaluation only, our fork/private test deployment may inject AI Pass's
+evaluation public client ID from protected CI/build configuration, but only
+when its exact callback is registered for that client. It is not an API key or
+client secret, is never committed or printed, and this shortcut is not upstream
+release guidance.
+
+To replace the evaluation client with your own:
+
+1. Register **Lumen** at the
+   [AI Pass Developer Dashboard](https://aipass.one/panel/developer).
+2. Register `AIPASS_OAUTH_REDIRECT_URI` exactly. The documented local value is
+   `http://localhost:8000/api/v1/aipass/oauth/callback`; production uses
+   `https://<your-Lumen-API-origin>/api/v1/aipass/oauth/callback`.
+3. Set `AIPASS_OAUTH_CLIENT_ID` to your own public client ID through protected
+   deployment configuration, then enable `FEATURE_AIPASS_OAUTH_ENABLED`.
+
+The client ID identifies the OAuth integration; it is not an API key or client
+secret and grants no API access by itself. Keep its value out of source, logs,
+and build output. Upstream remains blank, configurable, and fail-closed without
+a client.
+
+Using your own OAuth client attributes eligible paid usage to Lumen's
+integration and may earn developer revenue share under the
+[AI Pass Terms of Service](https://aipass.one/terms-of-service). Usage covered
+by free credits, trials, promotions, grants, bonuses, or unpaid/free-user
+balances is excluded; dashboard terms govern rates, eligibility, and payouts.
+This is optional context, not a guarantee or a reason to merge. Thank you for
+considering the contribution. Existing platform and BYOK paths remain
+available. See
+[ADR-0032](docs/adr/0032-aipass-oauth-account-connection.md).
+
 ### Zero-downtime phased migrations with evidence gates
 
 The two-role rebuild migrated `student`/`instructor` → `user` live: widen accepted roles → backfill → drop old values only after access tokens drained their 15-min TTL. The Alembic chain enforces one phase per run, and migration-level evidence gates refuse to tighten constraints over un-backfilled rows — one of them caught a real prod data condition (85 legacy chunks with NULL embedding model) at deploy time.
@@ -148,6 +192,7 @@ flowchart LR
       provider{LLM_PROVIDER dispatch}
       groq[Groq · Llama 3.3 70B]
       byok[BYOK allowlist<br/>OpenAI · Anthropic · Mistral · Groq]
+      aipass[AI Pass OAuth<br/>live models · shared wallet]
     end
 
     subgraph Eval[Eval loop]
@@ -165,6 +210,7 @@ flowchart LR
     authoring & tutor --> provider
     provider -.platform.-> groq
     provider -.per-user.-> byok
+    provider -.connected account.-> aipass
     api --> meter
     golden --> judge --> provider
 ```
@@ -217,7 +263,7 @@ OPENAI_API_KEY=<your-groq-key>
 LLM_MODEL=llama-3.3-70b-versatile
 ```
 
-The same `LLMProvider` abstraction takes native Anthropic or OpenAI by env var — no code changes. Feature flags (`FEATURE_BYOK_ENABLED`, `FEATURE_PRIVATE_PUBLISH_ENABLED`, `CLONE_ENABLED`, `FEATURE_TUTOR_STREAMING`) default **off**; set them in `.env` once their prerequisites (e.g. a real BYOK master key) are in place. `make demo-seed` adds the richer agentic-demo bundle.
+The same `LLMProvider` abstraction takes native Anthropic or OpenAI by env var — no code changes. Feature flags (`FEATURE_BYOK_ENABLED`, `FEATURE_AIPASS_OAUTH_ENABLED`, `FEATURE_PRIVATE_PUBLISH_ENABLED`, `CLONE_ENABLED`, `FEATURE_TUTOR_STREAMING`) default **off**; set them in `.env` once their prerequisites (e.g. a real BYOK master key, or an AI Pass public client ID and its exact registered callback URI) are in place. `make demo-seed` adds the richer agentic-demo bundle.
 
 <details>
 <summary><b>More screenshots</b> — dashboard, catalog, the agent-replay home page, the public eval page, a freshly built course, the brief review</summary>

@@ -32,8 +32,8 @@
 
 LLM providers (provider-agnostic Protocol; configured via env):
   Anthropic / OpenAI / local sentence-transformers / noop (tests)
-  – consumed by RAG tutor (E1), AI authoring (E2), multi-modal ingest (E3),
-    embeddings pipeline (E0), mastery dashboard (E7)
+  Optional per-user AI Pass OAuth transport for the RAG tutor
+  (server-owned tokens, live chat models, shared wallet)
 
 Credentials:
   OB3 / W3C Verifiable Credentials (Ed25519 over JCS) — primary
@@ -70,8 +70,12 @@ async comments plus the course-scoped AI tutor.
 2. Next.js renders RSC; protected routes call FastAPI with the access token from a same-site cookie via a thin server-side fetcher.
 3. FastAPI validates the JWT, looks up the user, applies RBAC at the dependency layer.
 4. Handlers call into the service layer; services call repositories; repositories use async SQLAlchemy sessions.
-5. WebSocket connections at `/api/ws/chat/{course_id}` fan out via Redis pub/sub so multiple `api` replicas stay coherent.
-6. Long-running jobs (image resize, video probe, email, certificate render, search index) enqueue to Celery via Redis.
+5. Foreground LLM dispatch may use the platform provider or a selected BYOK
+   credential. Tutor dispatch may additionally use an active AI Pass account;
+   AI Pass bearer tokens remain encrypted server-side and streamed tutor jobs
+   carry only an opaque connection ID.
+6. WebSocket connections at `/api/ws/chat/{course_id}` fan out via Redis pub/sub so multiple `api` replicas stay coherent.
+7. Long-running jobs (image resize, video probe, email, certificate render, search index) enqueue to Celery via Redis.
 
 ## 4. Module layout — backend
 

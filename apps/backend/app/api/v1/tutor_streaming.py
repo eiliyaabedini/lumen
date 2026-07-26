@@ -48,7 +48,7 @@ from app.core.errors import (
     TutorUserCapError,
 )
 from app.core.ratelimit import limiter
-from app.models.llm_call import BILLING_BYOK
+from app.models.llm_call import BILLING_AIPASS, BILLING_BYOK
 from app.models.tutor_conversation import TutorConversation
 from app.models.tutor_turn_job import TERMINAL_TURN_STATUSES, TURN_STATUS_ABORTED
 from app.services import byok as byok_service
@@ -242,16 +242,23 @@ async def post_turn(
         # boundary. Resolved BEFORE the dollar reservation (Gate-A fix): a
         # BYOK turn pays the user's own provider, so it must neither consume
         # nor be blocked by platform cost buckets (charter decision 5).
-        byok_ctx = await byok_service.resolve_context(db, user_id=user.id)
+        byok_ctx = await byok_service.resolve_context(
+            db,
+            user_id=user.id,
+            allow_aipass=True,
+        )
 
-        if byok_ctx.credential_id is not None:
+        if byok_ctx.credential_id is not None or byok_ctx.aipass_connection_id is not None:
             # Non-dollar BYOK request windows at enqueue (ADR-0027 §5).
             # Terminal streamed turns are visible through the llm_calls
             # rows the worker writes; the in-flight remainder through the
             # non-terminal turn count — together they close the burst
             # undercount. The route limiter + the concurrency slot above
             # stay in force.
-            limit_24h, limit_1h = quota_limits(BILLING_BYOK)
+            billing_mode = (
+                BILLING_AIPASS if byok_ctx.aipass_connection_id is not None else BILLING_BYOK
+            )
+            limit_24h, limit_1h = quota_limits(billing_mode)
             for window_seconds, limit, dimension in (
                 (24 * 60 * 60, limit_24h, "requests_24h"),
                 (60 * 60, limit_1h, "requests_1h"),
@@ -312,6 +319,7 @@ async def post_turn(
             user_message=body.content,
             course_id=course_id,
             credential_id=byok_ctx.credential_id,
+            aipass_connection_id=byok_ctx.aipass_connection_id,
         )
         # Commit so the after_commit listener fires the Celery enqueue.
         # Once committed, the row + sweep beat own the reservation —

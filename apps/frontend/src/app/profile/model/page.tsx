@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Card } from "@/components/ui/card";
+import { AIPassConnectionCard } from "@/components/aipass/AIPassConnectionCard";
 import { CredentialForm } from "@/components/byok/CredentialForm";
 import { CredentialList } from "@/components/byok/CredentialList";
 import { LLMCredentials, LLMProviders } from "@/lib/api/endpoints";
@@ -56,12 +57,14 @@ export default function ModelSettingsPage() {
     <main className="mx-auto grid max-w-2xl gap-6 px-4 py-10">
       <header className="grid gap-1">
         <h1 className="text-2xl font-semibold">{t("byok.title")}</h1>
-        <p className="text-sm text-muted-foreground">{t("byok.subtitle")}</p>
+        <p className="text-muted-foreground text-sm">{t("byok.subtitle")}</p>
       </header>
+
+      <AIPassConnectionCard />
 
       {providersQ.isSuccess && !byokEnabled ? (
         <Card className="p-6">
-          <p className="text-sm text-muted-foreground">{t("byok.unavailable")}</p>
+          <p className="text-muted-foreground text-sm">{t("byok.unavailable")}</p>
         </Card>
       ) : (
         <>

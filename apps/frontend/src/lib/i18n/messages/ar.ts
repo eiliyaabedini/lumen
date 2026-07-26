@@ -80,7 +80,8 @@ export const ar: Record<MessageKey, string> = {
   "auth.login.subtitle": "سجّل دخولك لتتابع التعلم.",
   "auth.login.demoHeading": "افتح العرض التجريبي",
   "auth.login.demoSubtitle": "نقرة واحدة وتكون داخل تجربة معلّم لومِن.",
-  "auth.login.demoNotice": "بيانات العرض التجريبي علنيّة — مُعبّأة مسبقًا وآمنة للمشاركة. سجّل الدخول لمشاهدة المعلّم وهو يعمل.",
+  "auth.login.demoNotice":
+    "بيانات العرض التجريبي علنيّة — مُعبّأة مسبقًا وآمنة للمشاركة. سجّل الدخول لمشاهدة المعلّم وهو يعمل.",
   "auth.login.email": "البريد الإلكتروني",
   "auth.login.password": "كلمة المرور",
   "auth.login.submit": "دخول",
@@ -139,7 +140,8 @@ export const ar: Record<MessageKey, string> = {
   "catalogPage.cartouche": "الكتالوج",
   "catalogPage.h1_1": "كل علم،",
   "catalogPage.h1_2": "مفهرس",
-  "catalogPage.subline": "تصفّح ما يدرّسه المدرّسون عبر لومِن. صَفِّ حسب الموضوع أو المستوى أو الوسم.",
+  "catalogPage.subline":
+    "تصفّح ما يدرّسه المدرّسون عبر لومِن. صَفِّ حسب الموضوع أو المستوى أو الوسم.",
   "catalogPage.searchPlaceholder": "ابحث في الكتالوج…",
   "catalogPage.searchAria": "ابحث في الدورات",
   "catalogPage.anyDifficulty": "الكل",
@@ -158,7 +160,8 @@ export const ar: Record<MessageKey, string> = {
   "home.cartouche": "افتُتح الآن",
   "home.heroTitle1": "سِر في المسار.",
   "home.heroTitle2": "كُن المسار.",
-  "home.heroSubline": "دورات حديثة للمهارات التي تحتاجها فعلًا. مشاريع عملية، مجموعات تعلّم مباشرة، شهادات لها معنى.",
+  "home.heroSubline":
+    "دورات حديثة للمهارات التي تحتاجها فعلًا. مشاريع عملية، مجموعات تعلّم مباشرة، شهادات لها معنى.",
 
   // Landing replay hero (L29)
   "home.replayHeroBody":
@@ -177,11 +180,14 @@ export const ar: Record<MessageKey, string> = {
   "home.pillar2.number": "٠٢",
   "home.pillar3.number": "٠٣",
   "home.pillar1.title": "ابنِ مشاريع حقيقية.",
-  "home.pillar1.body": "كل دورة تنتهي بشيء يمكنك إظهاره — تطبيق منشور، بيانات محلَّلة، عمل مكتمل في معرضك. لا اختبارات تتظاهر بأنها مهارات.",
+  "home.pillar1.body":
+    "كل دورة تنتهي بشيء يمكنك إظهاره — تطبيق منشور، بيانات محلَّلة، عمل مكتمل في معرضك. لا اختبارات تتظاهر بأنها مهارات.",
   "home.pillar2.title": "تعلَّم بإيقاعك.",
-  "home.pillar2.body": "دروس غير متزامنة بتتبع تقدّم خطوة بخطوة، ومرشد ذكي يجيب من محتوى الدورة نفسه، وقائمة مراجعة تكشف ما يستحق العودة إليه.",
+  "home.pillar2.body":
+    "دروس غير متزامنة بتتبع تقدّم خطوة بخطوة، ومرشد ذكي يجيب من محتوى الدورة نفسه، وقائمة مراجعة تكشف ما يستحق العودة إليه.",
   "home.pillar3.title": "احتفظ بما تصنع.",
-  "home.pillar3.body": "ترخيص MIT، قابلة للاستضافة الذاتية. دوراتك، بياناتك، شهاداتك — لك إلى الأبد، معنا أو بدوننا.",
+  "home.pillar3.body":
+    "ترخيص MIT، قابلة للاستضافة الذاتية. دوراتك، بياناتك، شهاداتك — لك إلى الأبد، معنا أو بدوننا.",
   "home.scrollCartouche": "تصفّح الكتالوج",
   "home.scrollH2": "ما يتعلّمه الناس الآن",
   "home.allScrolls": "جميع الدورات",
@@ -274,7 +280,8 @@ export const ar: Record<MessageKey, string> = {
   "notif.clearRead": "مسح المقروءة",
   "notif.cleared": "تم مسح {n} من الإشعارات المقروءة",
   "notif.clearConfirm.title": "مسح الإشعارات المقروءة؟",
-  "notif.clearConfirm.body": "سيؤدي هذا إلى إزالة كل إشعار قرأته نهائيًا — بما في ذلك الأقدم مما هو معروض. تبقى الإشعارات غير المقروءة.",
+  "notif.clearConfirm.body":
+    "سيؤدي هذا إلى إزالة كل إشعار قرأته نهائيًا — بما في ذلك الأقدم مما هو معروض. تبقى الإشعارات غير المقروءة.",
   "notif.clearConfirm.confirm": "مسح المقروءة",
   "notif.clearConfirm.clearing": "جارٍ المسح…",
   "notif.clearConfirm.cancel": "إلغاء",
@@ -351,7 +358,8 @@ export const ar: Record<MessageKey, string> = {
   "lessonEdit.bodyPlaceholder": "اكتب درسك…",
   "lessonEdit.videoUrl": "رابط الفيديو",
   "lessonEdit.captionsUrl": "رابط الترجمة (WebVTT، اختياري)",
-  "lessonEdit.captionsHelp": "أضف ترجمة WebVTT لتبقى الدرس متاحًا للمتعلمين الصمّ وضعاف السمع. افتراضيًا: مفعّلة.",
+  "lessonEdit.captionsHelp":
+    "أضف ترجمة WebVTT لتبقى الدرس متاحًا للمتعلمين الصمّ وضعاف السمع. افتراضيًا: مفعّلة.",
   "lessonEdit.captionsLabel": "اسم مسار الترجمة",
   "lessonEdit.captionsLabelPlaceholder": "العربية",
   "lessonEdit.captionsLang": "رمز اللغة (BCP-47)",
@@ -627,7 +635,8 @@ export const ar: Record<MessageKey, string> = {
   "studioEdit.stat.new7d": "جديد ({n}أ)",
   "studioEdit.stat.new30d": "جديد ({n}أ)",
   "studioEdit.detailsCard": "تفاصيل الدورة",
-  "studioEdit.renameNotice": "تغيير الاسم يعيد توليد رابط الـURL — الروابط القديمة لهذه الدورة ستُعاد توجيهها.",
+  "studioEdit.renameNotice":
+    "تغيير الاسم يعيد توليد رابط الـURL — الروابط القديمة لهذه الدورة ستُعاد توجيهها.",
   "studioEdit.coverUrl": "رابط الغلاف",
   "studioEdit.detailsToast": "تم حفظ التفاصيل",
   "studioEdit.saveError": "تعذّر الحفظ",
@@ -639,7 +648,8 @@ export const ar: Record<MessageKey, string> = {
   "studioEdit.dragHandle": "مقبض السحب",
   "studioEdit.editLessons": "تعديل الدروس",
   "studioEdit.dragTip": "تلميح: اسحب المقبض لإعادة ترتيب الوحدات. انقر الترس لتعديل دروس الوحدة.",
-  "studioEdit.outcomesHelp": "حتى 12 عبارة قصيرة (كل واحدة ≤240 حرفًا). تظهر فوق المنهج في صفحة الدورة كشبكة من علامات الإنجاز.",
+  "studioEdit.outcomesHelp":
+    "حتى 12 عبارة قصيرة (كل واحدة ≤240 حرفًا). تظهر فوق المنهج في صفحة الدورة كشبكة من علامات الإنجاز.",
   "studioEdit.outcomePlaceholder": "النتيجة رقم {n}",
   "studioEdit.remove": "إزالة",
   "studioEdit.addOutcome": "إضافة نتيجة",
@@ -793,13 +803,15 @@ export const ar: Record<MessageKey, string> = {
   "profile.password.submit": "تحديث كلمة المرور",
   "profile.password.submitting": "جارٍ التحديث…",
   "profile.section.email": "تغيير البريد الإلكتروني",
-  "profile.section.emailDesc": "سنرسل رابط تأكيد إلى العنوان الجديد. لن يصبح التغيير ساريًا حتى تنقر الرابط، وستُسجَّل خروجك من باقي الجلسات لأسباب أمنية.",
+  "profile.section.emailDesc":
+    "سنرسل رابط تأكيد إلى العنوان الجديد. لن يصبح التغيير ساريًا حتى تنقر الرابط، وستُسجَّل خروجك من باقي الجلسات لأسباب أمنية.",
   "profile.field.currentEmail": "البريد الحالي",
   "profile.field.newEmail": "البريد الجديد",
   "profile.email.submit": "إرسال رابط التأكيد",
   "profile.email.submitting": "جارٍ الإرسال…",
   "profile.export.title": "نزّل بياناتي",
-  "profile.export.description": "احصل على نسخة JSON من ملفك الشخصي وعدّ نشاطك. مفيد للاحتفاظ بسجل قبل المغادرة، أو لمجرد الفضول.",
+  "profile.export.description":
+    "احصل على نسخة JSON من ملفك الشخصي وعدّ نشاطك. مفيد للاحتفاظ بسجل قبل المغادرة، أو لمجرد الفضول.",
   "profile.export.button": "تنزيل كـ JSON",
   "profile.export.busy": "جارٍ التحضير…",
   "profile.export.toast": "تم تنزيل بياناتك.",
@@ -826,7 +838,8 @@ export const ar: Record<MessageKey, string> = {
 
   // تفضيلات الإشعارات (المرحلة D4)
   "prefs.notifications.title": "الإشعارات",
-  "prefs.notifications.description": "اختر طريقة وصول كل نوع من الإشعارات. الإعداد الافتراضي هو الجرس فقط.",
+  "prefs.notifications.description":
+    "اختر طريقة وصول كل نوع من الإشعارات. الإعداد الافتراضي هو الجرس فقط.",
   "prefs.notifications.save": "حفظ التفضيلات",
   "prefs.notifications.saving": "جارٍ الحفظ…",
   "prefs.notifications.savedToast": "تم تحديث تفضيلات الإشعارات",
@@ -860,19 +873,16 @@ export const ar: Record<MessageKey, string> = {
   // S3.11 — define→build→learn entry CTA (FR-DEFINE-09).
   "dashboard.define.cartouche": "تعلّم أي شيء",
   "dashboard.define.title": "أنشئ دورة لتتعلّمها",
-  "dashboard.define.body":
-    "صِف ما تريد تعلّمه. سيبني لومن دورة خاصة بك بإيقاعك الخاص.",
+  "dashboard.define.body": "صِف ما تريد تعلّمه. سيبني لومن دورة خاصة بك بإيقاعك الخاص.",
   "dashboard.define.cta": "أنشئ دورة لتتعلّمها",
 
   // S3.11 — define → build → learn flow (FR-DEFINE-*).
   "define.cartouche": "حدّد هدفك",
   "define.title": "أنشئ دورة لتتعلّمها",
-  "define.subtitle":
-    "أخبرنا بما تريد تعلّمه. سنطرح بضعة أسئلة، ثم نبني لك دورة خاصة بك.",
+  "define.subtitle": "أخبرنا بما تريد تعلّمه. سنطرح بضعة أسئلة، ثم نبني لك دورة خاصة بك.",
   // Goal-intake chat
   "define.chat.logLabel": "محادثة توضيح الهدف",
-  "define.chat.intro":
-    "ابدأ بوصف ما تريد تعلّمه — مهما كان مبهماً. سنصقله معاً.",
+  "define.chat.intro": "ابدأ بوصف ما تريد تعلّمه — مهما كان مبهماً. سنصقله معاً.",
   "define.chat.assistantLabel": "لومن",
   "define.chat.thinking": "جارٍ التفكير…",
   "define.chat.goalLabel": "ما الذي تريد تعلّمه؟",
@@ -883,8 +893,7 @@ export const ar: Record<MessageKey, string> = {
   "define.chat.send": "إرسال",
   "define.chat.review": "راجع موجزي",
   "define.chat.turnsRemaining": "بقيت {n} أسئلة",
-  "define.chat.turnCap":
-    "جمعنا ما يكفي للبدء. راجع موجزك وابنِ دورتك.",
+  "define.chat.turnCap": "جمعنا ما يكفي للبدء. راجع موجزك وابنِ دورتك.",
   // Running brief preview
   "define.brief.runningLabel": "موجزك حتى الآن",
   "define.brief.level": "المستوى",
@@ -898,18 +907,15 @@ export const ar: Record<MessageKey, string> = {
   // Brief review
   "define.review.cartouche": "مراجعة",
   "define.review.title": "راجع موجزك",
-  "define.review.subtitle":
-    "عدّل ما تشاء أدناه، ثم ابنِ. لن يحدث شيء حتى تؤكّد.",
+  "define.review.subtitle": "عدّل ما تشاء أدناه، ثم ابنِ. لن يحدث شيء حتى تؤكّد.",
   "define.review.goalSummary": "الهدف",
   "define.review.level": "المستوى",
   "define.review.levelUnset": "غير محدّد",
   "define.review.timeBudget": "الوقت المتاح (ساعات)",
   "define.review.sessions": "جلسات / أسبوع",
   "define.review.outcomes": "ما ستتمكّن من فعله",
-  "define.review.estimate":
-    "الدورة المقدّرة: نحو {modules} وحدات · {lessons} دروس.",
-  "define.review.privateNote":
-    "ستُنشأ دورة خاصة — لا يراها سواك حتى تختار مشاركتها.",
+  "define.review.estimate": "الدورة المقدّرة: نحو {modules} وحدات · {lessons} دروس.",
+  "define.review.privateNote": "ستُنشأ دورة خاصة — لا يراها سواك حتى تختار مشاركتها.",
   "define.review.build": "ابنِ دورتي",
   "define.review.back": "العودة إلى الأسئلة",
   // Build progress
@@ -917,12 +923,10 @@ export const ar: Record<MessageKey, string> = {
   "define.build.title": "جارٍ بناء دورتك",
   "define.build.doneTitle": "دورتك جاهزة",
   "define.build.failedTitle": "لم يكتمل البناء",
-  "define.build.working":
-    "نبحث ونرتّب ونصيغ دروسك — قد يستغرق هذا لحظة.",
+  "define.build.working": "نبحث ونرتّب ونصيغ دروسك — قد يستغرق هذا لحظة.",
   "define.build.timeline": "تقدّم البناء",
   "define.build.timelinePending": "جارٍ بدء البناء…",
-  "define.build.doneBody":
-    "تم بناء {modules} وحدات و{lessons} دروس. دورتك الخاصة جاهزة للدراسة.",
+  "define.build.doneBody": "تم بناء {modules} وحدات و{lessons} دروس. دورتك الخاصة جاهزة للدراسة.",
   "define.build.startLearning": "ابدأ التعلّم",
   "define.build.cancel": "إلغاء البناء",
   "define.build.failedHeading": "لم يكتمل البناء",
@@ -931,14 +935,10 @@ export const ar: Record<MessageKey, string> = {
   "define.build.retry": "حاول مجدداً",
   // Normalized errors
   "define.error.generic": "حدث خطأ ما. يُرجى المحاولة مجدداً.",
-  "define.error.turnCap":
-    "بلغنا حدّ الأسئلة. راجع موجزك وابنِ دورتك.",
-  "define.error.buildInFlight":
-    "هناك بناء قيد التنفيذ لهذا الموجز. يُرجى انتظار اكتماله.",
-  "define.error.buildQuota":
-    "بلغت حدّ عمليات البناء لهذا اليوم. يُرجى المحاولة غداً.",
-  "define.error.buildFailed":
-    "لم يكتمل البناء. لم يُحتفظ بأي دورة جزئية — يمكنك المحاولة مجدداً.",
+  "define.error.turnCap": "بلغنا حدّ الأسئلة. راجع موجزك وابنِ دورتك.",
+  "define.error.buildInFlight": "هناك بناء قيد التنفيذ لهذا الموجز. يُرجى انتظار اكتماله.",
+  "define.error.buildQuota": "بلغت حدّ عمليات البناء لهذا اليوم. يُرجى المحاولة غداً.",
+  "define.error.buildFailed": "لم يكتمل البناء. لم يُحتفظ بأي دورة جزئية — يمكنك المحاولة مجدداً.",
   "define.error.briefFinalized": "هذا الموجز مُنتهٍ بالفعل.",
   "define.error.sessionNotFound": "لم نتمكّن من العثور على تلك المحادثة.",
   "define.error.cancelled": "أُلغي البناء. لم يُحتفظ بأي دورة جزئية.",
@@ -973,15 +973,13 @@ export const ar: Record<MessageKey, string> = {
   "nav.reviews": "المراجعة",
   "reviews.cartouche": "مراجعة",
   "reviews.title": "التكرار المتباعد",
-  "reviews.subtitle":
-    "الاختبارات التي خضت لها تعود إلى هنا وفق جدول مضبوط على مدى تذكّرك لها.",
+  "reviews.subtitle": "الاختبارات التي خضت لها تعود إلى هنا وفق جدول مضبوط على مدى تذكّرك لها.",
   "reviews.stats.due": "مستحقة الآن",
   "reviews.stats.learning": "قيد التعلّم",
   "reviews.stats.review": "قيد المراجعة",
   "reviews.stats.next7": "خلال 7 أيام",
   "reviews.empty.title": "لا شيء للمراجعة",
-  "reviews.empty.body":
-    "أدِّ اختبارًا في أي دورة، وسيعود إلى هنا حين يحين وقت تحديث ذاكرتك.",
+  "reviews.empty.body": "أدِّ اختبارًا في أي دورة، وسيعود إلى هنا حين يحين وقت تحديث ذاكرتك.",
   "reviews.queueHeading": "التالي",
   "reviews.startReview": "ابدأ المراجعة",
   "reviews.grade.heading": "إلى أيّ مدى تذكّرت؟",
@@ -999,14 +997,14 @@ export const ar: Record<MessageKey, string> = {
   "nav.mastery": "الإتقان",
   "mastery.cartouche": "إتقان",
   "mastery.title": "ماذا تراجع تاليًا",
-  "mastery.subtitle":
-    "دروس رصدناها من اختباراتك، وقائمة المراجعة، وأسئلتك للمرشد.",
+  "mastery.subtitle": "دروس رصدناها من اختباراتك، وقائمة المراجعة، وأسئلتك للمرشد.",
   "mastery.weakSpots.heading": "نقاط الضعف — ابدأ من هنا",
   "mastery.weakSpots.empty.title": "لا شيء للإشارة إليه",
   "mastery.weakSpots.empty.body":
     "أدِّ اختبارًا أو اسأل المرشد، وستظهر هنا الدروس التي تحتاج إلى نظرة ثانية.",
   "mastery.courses.heading": "الإتقان حسب الدورة",
-  "mastery.courses.caption": "الإتقان يقيس أداءك في الاختبارات، والإنجاز يقيس الدروس المكتملة. وهما مستقلّان — فقد تكتمل دورة قراءة بنسبة 100% مع إتقان 0%.",
+  "mastery.courses.caption":
+    "الإتقان يقيس أداءك في الاختبارات، والإنجاز يقيس الدروس المكتملة. وهما مستقلّان — فقد تكتمل دورة قراءة بنسبة 100% مع إتقان 0%.",
   "mastery.courses.completion": "الإنجاز",
   "mastery.courses.mastery": "الإتقان",
   "mastery.courses.empty": "لم تسجّل في أيّ دورة بعد.",
@@ -1025,8 +1023,7 @@ export const ar: Record<MessageKey, string> = {
   "tutor.closeButton": "إغلاق المرشد",
   "tutor.new": "جديدة",
   "tutor.newConversation": "ابدأ محادثة جديدة",
-  "tutor.emptyPrompt":
-    "اسأل أيّ سؤال عن هذه الدورة — سيُجيب المرشد من دروسها ويستشهد بها.",
+  "tutor.emptyPrompt": "اسأل أيّ سؤال عن هذه الدورة — سيُجيب المرشد من دروسها ويستشهد بها.",
   "tutor.thinking": "يفكّر…",
   "tutor.composerPlaceholder": "اكتب سؤالك…",
   "tutor.send": "إرسال",
@@ -1136,10 +1133,8 @@ export const ar: Record<MessageKey, string> = {
   "eval.adversarial.heading": "نسبة الرفض، 15 محفّزًا.",
   "eval.adversarial.body":
     "تشمل الفئات: حقن المحفّز، استخراج محفّز النظام، كسر القيود، خارج النطاق، الحقن غير المباشر. المجموعة داخل المستودع للمراجعة؛ النتائج التفصيلية لا تُكشف هنا — وإلا تحوّلت إلى خارطة لما يجب تجربته.",
-  "eval.adversarial.measurementPending":
-    "تُنشر نسبة الرفض مع الجولة المختومة الأولى.",
-  "eval.footer.body":
-    "تريد المنهجية، شكل المجموعة، أو نقاش مهني؟",
+  "eval.adversarial.measurementPending": "تُنشر نسبة الرفض مع الجولة المختومة الأولى.",
+  "eval.footer.body": "تريد المنهجية، شكل المجموعة، أو نقاش مهني؟",
   "eval.footer.methodology": "المنهجية",
   "eval.footer.contact": "راسلني",
 
@@ -1151,8 +1146,7 @@ export const ar: Record<MessageKey, string> = {
     "صريح حول ما يُقاس، وما هو ناقص، وما سيتغيّر لو كان المعلم يخدم حركة فعلية لا عرضًا توضيحيًا.",
   "evalMethodology.what.cartouche": "ما الذي نقيسه",
   "evalMethodology.what.heading": "ثلاثة محاور لكل مجموعة. عنوان واحد للعدواني.",
-  "evalMethodology.what.intro":
-    "كل دور تجريبي يمر عبر منصة التقييم يُقيَّم 0-5 على ثلاثة محاور:",
+  "evalMethodology.what.intro": "كل دور تجريبي يمر عبر منصة التقييم يُقيَّم 0-5 على ثلاثة محاور:",
   "evalMethodology.what.axis.grounding":
     "— هل الإجابة مدعومة من الدروس المُستشهد بها؟ إجابة بأسلوب جيد واستشهاد وهمي تحصل على درجة منخفضة.",
   "evalMethodology.what.axis.accuracy":
@@ -1165,34 +1159,27 @@ export const ar: Record<MessageKey, string> = {
   "evalMethodology.how.heading": "LLM-as-judge بميزان نشحنه داخل المستودع.",
   "evalMethodology.how.intro":
     "كل زوج (سؤال، إجابة) يُرسل إلى نموذج حَكَم مع الإجابة الذهبية وميزان لكل محور.",
-  "evalMethodology.how.judge":
-    "تُحسب كلفة الحَكَم عبر نفس غلاف H1 لتتبّع التكلفة.",
+  "evalMethodology.how.judge": "تُحسب كلفة الحَكَم عبر نفس غلاف H1 لتتبّع التكلفة.",
   "evalMethodology.how.bias":
     "LLM-as-judge له تحيّزات معروفة (تفضيل عائلة نموذجه، مكافأة الإطالة، تجاهل الأخطاء الواقعية الدقيقة).",
   "evalMethodology.adv.cartouche": "المجموعة العدوانية",
   "evalMethodology.adv.heading": "نسبة الرفض على مجموعة 15 محفّزًا داخل المستودع.",
   "evalMethodology.adv.intro":
     "المجموعة في `apps/backend/evals/security/probes.jsonl` تغطي حقن المحفّز، استخراج محفّز النظام، كسر القيود، خارج النطاق، الحقن غير المباشر.",
-  "evalMethodology.adv.heuristic":
-    "حُكم القرار مطابقة نصية على قائمة مغلقة من مؤشرات الرفض.",
-  "evalMethodology.adv.disclosure":
-    "النتائج التفصيلية لكل محفّز غير منشورة.",
+  "evalMethodology.adv.heuristic": "حُكم القرار مطابقة نصية على قائمة مغلقة من مؤشرات الرفض.",
+  "evalMethodology.adv.disclosure": "النتائج التفصيلية لكل محفّز غير منشورة.",
   "evalMethodology.limits.cartouche": "حدود معروفة",
   "evalMethodology.limits.heading": "أين تكون الأرقام أضعف ممّا تبدو.",
-  "evalMethodology.limits.judgeOnLLM":
-    "LLM-as-judge يتفق مع البشر ~70-85% حسب الميزان.",
+  "evalMethodology.limits.judgeOnLLM": "LLM-as-judge يتفق مع البشر ~70-85% حسب الميزان.",
   "evalMethodology.limits.smallN":
     "كل مجموعة تشحن ~10-30 عنصرًا. يكفي لاكتشاف التراجعات الكبيرة؛ لا يكفي لرصد الانحراف الدقيق.",
-  "evalMethodology.limits.snapshot":
-    "المجموعة مُجمّدة لقابلية المقارنة عبر الجولات.",
+  "evalMethodology.limits.snapshot": "المجموعة مُجمّدة لقابلية المقارنة عبر الجولات.",
   "evalMethodology.scale.cartouche": "ما سأفعله مختلفًا عند التوسّع",
   "evalMethodology.scale.heading": "لو كان يخدم حركة حقيقية لا عرضًا.",
-  "evalMethodology.scale.humanGraders":
-    "أول استثمار: مجموعة صغيرة من المُقيّمين البشر.",
+  "evalMethodology.scale.humanGraders": "أول استثمار: مجموعة صغيرة من المُقيّمين البشر.",
   "evalMethodology.scale.continuousJudge":
     "ثانيًا: تقييم مستمر على شريحة محتجزة من أسئلة المستخدمين الحقيقيين.",
-  "evalMethodology.scale.adversarialRotation":
-    "ثالثًا: تدوير المجموعة العدوانية.",
+  "evalMethodology.scale.adversarialRotation": "ثالثًا: تدوير المجموعة العدوانية.",
   "evalMethodology.footer.body":
     "أسئلة حول تحيّز محدّد، أو ميزان معيّن، أو كيفية قراءة واجهة التقييم؟",
   "evalMethodology.footer.backToEval": "العودة إلى /eval",
@@ -1209,19 +1196,17 @@ export const ar: Record<MessageKey, string> = {
   "caseStudy.origin.p1":
     "بدأت Lumen في نوفمبر 2020 كمشروع Django جانبي — منصة تعلّم لنفسي. خمس سنوات وثورة نموذج لاحقًا، النموذج الأوّلي اختفى، وبقي السؤال: هل يستطيع وكيل أن يُعلّم فعلًا؟ لا فقط أن يُلخّص ويقتبس.",
   "caseStudy.origin.p2":
-    "لذا أعدتُ بناءها. منسّق مخصّص، بدون LangChain. Groq Llama 3.3 لكلفة-كمون-التشغيل التي تجعل \"شاهده يفكّر\" حقيقيًا. تقييمات عامة كي تُدقّق كفاءة الوكيل بنفسك.",
+    'لذا أعدتُ بناءها. منسّق مخصّص، بدون LangChain. Groq Llama 3.3 لكلفة-كمون-التشغيل التي تجعل "شاهده يفكّر" حقيقيًا. تقييمات عامة كي تُدقّق كفاءة الوكيل بنفسك.',
   "caseStudy.origin.p3":
     "Lumen يعمل على AWS t4g.small. سقف التكلفة ميزة لا اعتذار — أجبر كل قرار معماري على الدفاع عن نفسه أمام ميزانية إنفاق LLM محدودة.",
   "caseStudy.arch.cartouche": "البنية",
   "caseStudy.arch.heading": "ستة صناديق، بروتوكولان.",
-  "caseStudy.arch.intro":
-    "كل شيء يعمل في حزمة docker-compose واحدة على آلة افتراضية واحدة:",
+  "caseStudy.arch.intro": "كل شيء يعمل في حزمة docker-compose واحدة على آلة افتراضية واحدة:",
   "caseStudy.arch.notes":
     "بروتوكولان يربطان الكل. HTTP / fetch لواجهات الطلب-والاستجابة. Server-Sent Events لتدفّق المعلم (Redis Streams كمخزن مؤقت بين عامل Celery الذي يُجري نداء LLM وعملية FastAPI التي تحمل اتصال SSE المفتوح — pub/sub لم يكن ليفي لأن الاستئناف عند الانقطاع يحتاج إعادة التشغيل).",
   "caseStudy.turn.cartouche": "تشريح دور واحد",
   "caseStudy.turn.heading": "خمس خطوات. كل واحدة رخيصة لأنها يجب أن تكون.",
-  "caseStudy.turn.intro":
-    "حين يضغط المتعلّم على إرسال، يحدث هذا:",
+  "caseStudy.turn.intro": "حين يضغط المتعلّم على إرسال، يحدث هذا:",
   "caseStudy.turn.step1":
     "POST /tutor/turns يُدخل صفًّا في tutor_turn_jobs ويحجز كلفة تقديرية عبر نص Lua ذرّي. حدث after_commit يطلق Celery (try/except — broker معطّل لا يُنتج 500).",
   "caseStudy.turn.step2":
@@ -1229,7 +1214,7 @@ export const ar: Record<MessageKey, string> = {
   "caseStudy.turn.step3":
     "المنسّق يعمل: تضمين → مُسترجِع → اختياريًّا code_runner / web_searcher → توليف. كل أداة تُصدر حدثًا إلى Redis Stream الذي اشترك فيه المتصفّح.",
   "caseStudy.turn.step4":
-    "التوليف يبثّ الرموز عبر stream_options={\"include_usage\": True} — first-token-ms يسقط عند أوّل قطعة؛ الكلفة تُسوَّى بدقة عبر include_usage (لا انحراف تقديري).",
+    'التوليف يبثّ الرموز عبر stream_options={"include_usage": True} — first-token-ms يسقط عند أوّل قطعة؛ الكلفة تُسوَّى بدقة عبر include_usage (لا انحراف تقديري).',
   "caseStudy.turn.step5":
     "نهاية: حدث turn_complete إلى Redis؛ صفّ DB يُعلَّم complete (مع WHERE يرفض الكتابة فوق aborted — سباق إلغاء حقيقي اكتُشف عبر إنقاذ Codex).",
   "caseStudy.turn.tail":
@@ -1237,15 +1222,14 @@ export const ar: Record<MessageKey, string> = {
   "caseStudy.prompt.cartouche": "تطوّر المحفّز",
   "caseStudy.prompt.heading": "وضعا فشل، إعادتا كتابة.",
   "caseStudy.prompt.p1":
-    "النسخة 1: محفّز نظام واحد بـ800 كلمة يحاول كل شيء. يرفض بإفراط (النموذج يفسّر \"التزم بالنطاق\" كـ\"ارفض أي شيء قد يخرج عن النطاق\"). نسبة الرفض للأسئلة المشروعة 18%.",
+    'النسخة 1: محفّز نظام واحد بـ800 كلمة يحاول كل شيء. يرفض بإفراط (النموذج يفسّر "التزم بالنطاق" كـ"ارفض أي شيء قد يخرج عن النطاق"). نسبة الرفض للأسئلة المشروعة 18%.',
   "caseStudy.prompt.p2":
     "النسخة 4: انقسام إلى محفّز مخطّط + محفّزات لكل وكيل فرعي. المخطّط يختار الأدوات؛ الوكلاء الفرعيون لكل واحد منهم وظيفة. التوليف له قواعد نطاقه. الرفض المشروع انخفض إلى 3%؛ الرفض العدواني بقي >90%.",
   "caseStudy.prompt.p3":
     "ما سأفعله مختلفًا: استثمر في حلقة معايرة LLM-as-judge أبكر. أعدتُ كتابة المحفّزات بناءً على مراجعة يدوية للنسخ 1-3؛ تقييم منظّم كان سيُسلّط الضوء على نمط الرفض المُفرط قبل أسبوعين.",
   "caseStudy.notUsed.cartouche": "ما لم أستخدمه",
   "caseStudy.notUsed.heading": "ولماذا كل غياب مقصود.",
-  "caseStudy.notUsed.intro":
-    "كل إطار رفضته هو ميزة كنتُ سأضطر لتصحيحها لو قبلته:",
+  "caseStudy.notUsed.intro": "كل إطار رفضته هو ميزة كنتُ سأضطر لتصحيحها لو قبلته:",
   "caseStudy.notUsed.langchain":
     "**LangChain / LlamaIndex** — ضريبة التجريد حقيقية. احتجتُ أن أعرف بالضبط أي محفّز كان منسّقي يُرسل للنموذج وماذا أعاد النموذج. تغليفها في عنصر سلسلة يعني فقد الخط البصري حين يحدث خطأ.",
   "caseStudy.notUsed.fineTune":
@@ -1257,7 +1241,7 @@ export const ar: Record<MessageKey, string> = {
   "caseStudy.lessons.cartouche": "دروس",
   "caseStudy.lessons.heading": "ما سأفعله مختلفًا في المرة القادمة.",
   "caseStudy.lessons.p1":
-    "**استثمر في حلقة التقييم أوّلًا.** أسبوعان من \"هل هذا المحفّز أفضل من ذاك؟\" بالمراجعة اليدوية كانا سيُستبدلان بجولة تقييم تستغرق 30 دقيقة. فعلتُ هذا بالعكس: شحنتُ معلمًا يعمل، ثم ركّبتُ منصّة التقييم. الترتيب الصحيح هو العكس.",
+    '**استثمر في حلقة التقييم أوّلًا.** أسبوعان من "هل هذا المحفّز أفضل من ذاك؟" بالمراجعة اليدوية كانا سيُستبدلان بجولة تقييم تستغرق 30 دقيقة. فعلتُ هذا بالعكس: شحنتُ معلمًا يعمل، ثم ركّبتُ منصّة التقييم. الترتيب الصحيح هو العكس.',
   "caseStudy.lessons.p2":
     "**اختر ركيزة البث بعناية.** Redis Streams كان القرار الصحيح للاستئناف عند الانقطاع؛ pub/sub بدا مغريًا في اليوم الأوّل وكان سيعني إعادة كتابة معالج SSE وقت النشر.",
   "caseStudy.lessons.p3":
@@ -1270,8 +1254,7 @@ export const ar: Record<MessageKey, string> = {
 
   // Cost-cap closing CTA (L23)
   "tutor.costCap.cartouche": "تم بلوغ ميزانية العرض التوضيحي",
-  "tutor.costCap.headline":
-    "لقد استنفذت حصتك من ميزانية العرض التوضيحي اليوم.",
+  "tutor.costCap.headline": "لقد استنفذت حصتك من ميزانية العرض التوضيحي اليوم.",
   "tutor.costCap.body":
     "Lumen يعمل بميزانية حقيقية لنموذج اللغة — كل دور يكلّف بضع سنتات والعرض يضع سقفًا للحفاظ على الاستقرار. حاول لاحقًا أو تواصل مباشرة.",
   "tutor.costCap.resetsIn": "تُعاد التهيئة خلال ~{hours}س",
@@ -1281,17 +1264,16 @@ export const ar: Record<MessageKey, string> = {
   // Blog
   "blog.cartouche": "ملاحظات ميدانية",
   "blog.title": "ملاحظات من بناء Lumen",
-  "blog.subline":
-    "قرارات معمارية، يوميات تطوير المحفّزات، والإخفاقات التي شكّلت ما تم شحنه.",
+  "blog.subline": "قرارات معمارية، يوميات تطوير المحفّزات، والإخفاقات التي شكّلت ما تم شحنه.",
   "blog.empty.title": "لا توجد منشورات بعد.",
   "blog.empty.body":
     "ستتبع المنشورات الأولى دراسة الحالة — قرارات تصميم وكيل التعلم، ومنهجية التقييم، وحسابات التكلفة والكمون.",
 
   // BYOK — استخدم مفتاحك الخاص (S5 / ADR-0027)
-  "byok.unavailable": "ميزة استخدام مفتاحك الخاص غير متاحة حاليًا. يعمل معلّمك على نموذج المنصّة المجاني.",
+  "byok.unavailable":
+    "ميزة استخدام مفتاحك الخاص غير متاحة حاليًا. يعمل معلّمك على نموذج المنصّة المجاني.",
   "byok.title": "النموذج الخاص بك",
-  "byok.subtitle":
-    "استخدم مزوّد الذكاء الاصطناعي ومفتاحك الخاص بدلاً من نموذج المنصّة المجاني.",
+  "byok.subtitle": "استخدم مزوّد الذكاء الاصطناعي ومفتاحك الخاص بدلاً من نموذج المنصّة المجاني.",
   "byok.provider": "المزوّد",
   "byok.model": "النموذج",
   "byok.apiKey": "مفتاح الـ API",
@@ -1309,11 +1291,31 @@ export const ar: Record<MessageKey, string> = {
   "byok.empty": "لا يوجد مفتاح نموذج بعد. أضِف واحدًا لاستخدام مزوّدك الخاص.",
   "byok.savedToast": "تم حفظ مفتاح النموذج.",
   "byok.deletedToast": "تمت إزالة مفتاح النموذج.",
-  "byok.error.modelUnavailable":
-    "لم يعد هذا النموذج متاحًا؛ يتم استخدام نموذج المنصّة.",
+  "byok.error.modelUnavailable": "لم يعد هذا النموذج متاحًا؛ يتم استخدام نموذج المنصّة.",
   "byok.error.providerError": "رفض مزوّدك الطلب. تحقّق من مفتاحك.",
   "byok.error.rateLimited": "محاولات تحقّق كثيرة جدًا. حاول لاحقًا.",
   "byok.quota.exceeded": "لقد بلغت حدّ الطلبات حاليًا.",
+
+  // AI Pass — اتصال حساب OAuth اختياري
+  "aipass.title": "ربط AI Pass",
+  "aipass.description":
+    "اربط حساب AI Pass لطلبات المدرّس باستخدام محفظته المشتركة — من دون مفتاح API.",
+  "aipass.connect": "ربط AI Pass",
+  "aipass.connected": "متصل",
+  "aipass.connectedNow": "تم ربط AI Pass.",
+  "aipass.callbackError": "تعذّر ربط AI Pass. يُرجى المحاولة مرة أخرى.",
+  "aipass.reconnect": "إعادة الاتصال مطلوبة",
+  "aipass.reconnectAction": "إعادة ربط AI Pass",
+  "aipass.disconnect": "فصل AI Pass",
+  "aipass.disconnected": "تم فصل AI Pass.",
+  "aipass.active": "استخدمه لطلبات المدرّس",
+  "aipass.model": "نموذج AI Pass",
+  "aipass.modelChoose": "اختر نموذجًا",
+  "aipass.modelsLoading": "جارٍ تحميل النماذج المباشرة…",
+  "aipass.modelsLive": "تُحمّل النماذج مباشرةً من AI Pass.",
+  "aipass.modelSaved": "تم اختيار نموذج AI Pass.",
+  "aipass.unavailable": "اتصال AI Pass غير متاح في هذا النشر.",
+  "aipass.error": "تعذّر إكمال طلب AI Pass.",
 
   // Studio two-control publish + share (S2.12 / ADR-0026) — translation_status: mt-draft
   "studio.lifecycle.draft": "مسودة",
@@ -1364,8 +1366,7 @@ export const ar: Record<MessageKey, string> = {
   "adminModeration.reasonPlaceholder": "اختر سببًا",
   "adminModeration.noteLabel": "ملاحظة (اختياري)",
   "adminModeration.notePlaceholder": "سياق لسجل التدقيق",
-  "adminModeration.quarantineWarning":
-    "هذا السبب يحجر الدورة بالكامل — حتى المالك يفقد الوصول.",
+  "adminModeration.quarantineWarning": "هذا السبب يحجر الدورة بالكامل — حتى المالك يفقد الوصول.",
   // تبويب البلاغات
   "adminModeration.reports.empty": "لا توجد بلاغات.",
   "adminModeration.reports.col.course": "الدورة",

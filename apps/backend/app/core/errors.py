@@ -203,6 +203,44 @@ class ByokProviderError(AppError):
 
 
 # ---------------------------------------------------------------------------
+# Optional AI Pass OAuth account connection (ADR-0032).
+# ---------------------------------------------------------------------------
+
+
+class AIPassUnavailableError(AppError):
+    """Feature/config/storage prerequisite is absent. 503, fail closed."""
+
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    code = "aipass.unavailable"
+
+
+class AIPassOAuthError(AppError):
+    """OAuth state or callback input was rejected without exposing details."""
+
+    status_code = status.HTTP_400_BAD_REQUEST
+    code = "aipass.oauth_failed"
+
+
+class AIPassConnectionRequiredError(UnauthorizedError):
+    """The user must connect/reconnect AI Pass."""
+
+    code = "aipass.connection_required"
+
+
+class AIPassUpstreamAppError(AppError):
+    """Bounded upstream/discovery/chat failure with a generic response."""
+
+    status_code = status.HTTP_502_BAD_GATEWAY
+    code = "aipass.upstream_failed"
+
+
+class AIPassModelUnavailableError(ConflictError):
+    """A selected model is absent from current live discovery."""
+
+    code = "aipass.model_unavailable"
+
+
+# ---------------------------------------------------------------------------
 # S4 (clone/remix) error codes — ADR-0028 §"Error codes". All map to the
 # standard {error:{code,message,details,request_id}} envelope.
 # ---------------------------------------------------------------------------

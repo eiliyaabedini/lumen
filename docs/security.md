@@ -115,6 +115,33 @@ The H6 production guard refuses to boot with `LLM_PROVIDER=noop` so a
 demo that's accidentally pointed at the canned-text test provider
 can't ship.
 
+## AI Pass account connection
+
+AI Pass is an optional OAuth account connection, not an API-key field.
+FastAPI owns Authorization Code + PKCE S256, validates endpoints from the AI
+Pass authorization-server metadata, and binds callbacks to both one-time state
+and a short-lived HttpOnly browser nonce. The access token, refresh token, and
+PKCE verifier are envelope-encrypted in Postgres; browser JavaScript receives
+only connection status and live model metadata.
+
+Refresh-token rotation holds a row lock and persists the replacement encrypted
+bundle atomically. Disconnect serializes with refresh and callback completion,
+invalidates pending connection attempts, attempts revocation, and always clears
+local material. Tutor requests are the only dispatch surface that opts into AI
+Pass; authoring and other existing provider paths remain unchanged. The worker
+receives only an opaque connection ID, never a bearer token. A user cancellation
+marks the durable turn aborted; the worker observes that state and cancels the
+active upstream response so shared-wallet spend is not allowed to continue
+after the UI stops. Disconnect cannot erase a queued job's AI Pass funding
+marker; that job fails closed if its encrypted connection no longer exists.
+
+The integration is fail-closed behind `FEATURE_AIPASS_OAUTH_ENABLED`. It also
+requires a public OAuth client identifier from protected runtime
+configuration, an exact registered HTTPS callback URI, and the production KEK.
+The client identifier is not an API key or client secret, but its configured
+value and all OAuth tokens stay out of source, logs, and application DTOs. See
+[ADR-0032](adr/0032-aipass-oauth-account-connection.md).
+
 ## Production boot guards
 
 In addition to `Settings.assert_production_ready()` (dev-default
