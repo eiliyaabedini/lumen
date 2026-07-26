@@ -120,11 +120,12 @@ responses. The feature must remain inert when either prerequisite is absent.
   client identifier, registered callback URI, or secure KEK is absent, fail
   closed and show the account connection as unavailable.
 - Keep upstream source blank and configurable. A fork-owned private preview may
-  inject an AI Pass-owned evaluation client identifier through repository
-  secrets only for a callback already registered to that client. It must never
-  become an upstream default or be committed, printed, logged, or returned.
-  Maintainer deployments replace it through the same
-  `AIPASS_OAUTH_CLIENT_ID` variable with a maintainer-owned registration.
+  inject AI Pass's existing first-party PUBLIC client identifier through
+  protected CI/build configuration only for a callback already registered to
+  that client. This is evaluation-only, not an API key or client secret, and
+  not upstream release guidance. It must never be committed, printed, logged,
+  or returned. Maintainer deployments replace it through the same
+  `AIPASS_OAUTH_CLIENT_ID` variable with their own registration.
 
 ## Alternatives considered
 

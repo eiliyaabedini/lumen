@@ -124,27 +124,36 @@ Pass wallet for tutor requests. Other platform and BYOK dispatch paths remain
 unchanged. Users click **Connect AI Pass**; they do not provide a provider API
 key, and spend comes from their own AI Pass wallet.
 
-#### Try it / Use your own client
+#### Evaluation and maintainer replacement
 
-1. Register a public OAuth client in the
+For evaluation only, our fork/private test deployment may inject AI Pass's
+existing first-party PUBLIC client ID from protected CI/build configuration,
+but only when its exact callback is registered for that client. It is not an
+API key or client secret, is never committed or printed, and this shortcut is
+not upstream release guidance.
+
+To replace the evaluation client with your own:
+
+1. Register **Lumen** at the
    [AI Pass Developer Dashboard](https://aipass.one/panel/developer).
-2. Register the exact callback configured in `AIPASS_OAUTH_REDIRECT_URI`.
-3. Supply that public client ID through `AIPASS_OAUTH_CLIENT_ID`, then enable
-   `FEATURE_AIPASS_OAUTH_ENABLED`.
+2. Register `AIPASS_OAUTH_REDIRECT_URI` exactly. The documented local value is
+   `http://localhost:8000/api/v1/aipass/oauth/callback`; production uses
+   `https://<your-Lumen-API-origin>/api/v1/aipass/oauth/callback`.
+3. Set `AIPASS_OAUTH_CLIENT_ID` to your own public client ID through protected
+   deployment configuration, then enable `FEATURE_AIPASS_OAUTH_ENABLED`.
 
 The client ID identifies the OAuth integration; it is not an API key or client
-secret and grants no API access by itself. Keep its value out of source and
-logs. A fork-owned private preview may inject an AI Pass-owned evaluation
-client ID through repository secrets only when its exact callback is already
-registered. Upstream remains blank, configurable, and fail-closed without a
-client; maintainers should replace any evaluation ID with their own through the
-same environment variable.
+secret and grants no API access by itself. Keep its value out of source, logs,
+and build output. Upstream remains blank, configurable, and fail-closed without
+a client.
 
-A maintainer-owned client attributes eligible paid usage to the integration and
-may earn developer revenue share under the
+Using your own OAuth client attributes eligible paid usage to Lumen's
+integration and may earn developer revenue share under the
 [AI Pass Terms of Service](https://aipass.one/terms-of-service). Usage covered
-by free credits, trials, promotions, grants, bonuses, or unpaid/free-user
-balances is excluded. Existing platform and BYOK paths remain available. See
+by free, trial, promotional, grant, bonus, or other unpaid usage is excluded;
+dashboard terms govern rates, eligibility, and payouts. This is optional
+context, not a guarantee or a reason to merge. Thank you for considering the
+contribution. Existing platform and BYOK paths remain available. See
 [ADR-0032](docs/adr/0032-aipass-oauth-account-connection.md).
 
 ### Zero-downtime phased migrations with evidence gates
