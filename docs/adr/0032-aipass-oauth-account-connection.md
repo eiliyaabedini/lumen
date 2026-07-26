@@ -18,10 +18,11 @@ foreground LLM dispatch, so they are also the strongest available place for AI
 Pass OAuth material and wallet-billed requests.
 
 The integration also has deployment prerequisites that this repository cannot
-manufacture: the existing first-party public client identifier must be supplied
-through protected runtime configuration, and each deployed callback URI must be
-registered for that client. No client identifier value belongs in source
-control. The feature must remain inert when either prerequisite is absent.
+manufacture: a public OAuth client identifier must be supplied through
+protected runtime configuration, and each deployed callback URI must be
+registered for that client. The identifier is not an API key or client secret,
+but its deployment value does not belong in source, logs, or application
+responses. The feature must remain inert when either prerequisite is absent.
 
 ## Decision
 
@@ -115,9 +116,15 @@ control. The feature must remain inert when either prerequisite is absent.
 - Validate callback query bounds inside the redirect handler so malformed
   authorization codes or state are never reflected by framework validation
   responses. Scrub AI Pass transport locals from error telemetry.
-- Ship behind `FEATURE_AIPASS_OAUTH_ENABLED=false`. If the protected public
+- Ship behind `FEATURE_AIPASS_OAUTH_ENABLED=false`. If the configured public
   client identifier, registered callback URI, or secure KEK is absent, fail
   closed and show the account connection as unavailable.
+- Keep upstream source blank and configurable. A fork-owned private preview may
+  inject an AI Pass-owned evaluation client identifier through repository
+  secrets only for a callback already registered to that client. It must never
+  become an upstream default or be committed, printed, logged, or returned.
+  Maintainer deployments replace it through the same
+  `AIPASS_OAUTH_CLIENT_ID` variable with a maintainer-owned registration.
 
 ## Alternatives considered
 
@@ -131,8 +138,8 @@ control. The feature must remain inert when either prerequisite is absent.
   unreliable for upstream wallet spend.
 - **Hard-coded AI Pass models** — rejected: the catalog is live account data
   and can change independently of Lumen.
-- **A client secret** — rejected: this is an existing public client and uses
-  PKCE; shipping a secret with a public-client integration would be misleading.
+- **A client secret** — rejected: this is a public client and uses PKCE;
+  shipping a secret with a public-client integration would be misleading.
 - **Rendering stop locally while the worker continues** — rejected: the user
   would continue funding work after cancellation.
 
@@ -142,9 +149,9 @@ control. The feature must remain inert when either prerequisite is absent.
   boundary and require the same KEK versions.
 - The existing KEK rotation command covers AI Pass token bundles and pending
   PKCE verifiers as well as BYOK credentials before an old KEK is retired.
-- The feature is deployable only after operators provide the existing public
-  client identifier through protected runtime configuration and register the
-  exact HTTPS callback URI. Until then it is intentionally unavailable.
+- The feature is deployable only after operators provide a public client
+  identifier through protected runtime configuration and register the exact
+  HTTPS callback URI. Until then it is intentionally unavailable.
 - Live end-to-end authorization cannot be represented by repository fixtures.
   Automated coverage uses sentinel credentials and mocked AI Pass transport;
   deployment still requires the manual authorization, refresh, model, chat,

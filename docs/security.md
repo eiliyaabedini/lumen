@@ -136,10 +136,11 @@ after the UI stops. Disconnect cannot erase a queued job's AI Pass funding
 marker; that job fails closed if its encrypted connection no longer exists.
 
 The integration is fail-closed behind `FEATURE_AIPASS_OAUTH_ENABLED`. It also
-requires the existing public client identifier from protected runtime
+requires a public OAuth client identifier from protected runtime
 configuration, an exact registered HTTPS callback URI, and the production KEK.
-No client identifier value or OAuth token is committed or returned in an
-application DTO. See [ADR-0032](adr/0032-aipass-oauth-account-connection.md).
+The client identifier is not an API key or client secret, but its configured
+value and all OAuth tokens stay out of source, logs, and application DTOs. See
+[ADR-0032](adr/0032-aipass-oauth-account-connection.md).
 
 ## Production boot guards
 

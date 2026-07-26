@@ -15,8 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   entering an API key. OAuth tokens and transport remain server-owned and
   encrypted; refresh rotation is atomic, disconnect revokes and clears token
   material, and cancelling a streamed turn closes the wallet-billed upstream
-  request. The feature is off until operators provide the existing public
-  client configuration and registered callback URI. See ADR-0032.
+  request. The feature is off until operators provide a public OAuth client ID
+  (not an API key or client secret) and its exact registered callback URI. See
+  ADR-0032.
 
 - **Notifications are now feature-complete: delete, clear, mark-unread,
   a full inbox page, and an accurate badge.** Per-row kebab actions
