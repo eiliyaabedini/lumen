@@ -124,13 +124,13 @@ Pass wallet for tutor requests. Other platform and BYOK dispatch paths remain
 unchanged. Users click **Connect AI Pass**; they do not provide a provider API
 key, and spend comes from their own AI Pass wallet.
 
-#### Evaluation and maintainer replacement
+#### Try it / Use your own client
 
 For evaluation only, our fork/private test deployment may inject AI Pass's
-existing first-party PUBLIC client ID from protected CI/build configuration,
-but only when its exact callback is registered for that client. It is not an
-API key or client secret, is never committed or printed, and this shortcut is
-not upstream release guidance.
+evaluation public client ID from protected CI/build configuration, but only
+when its exact callback is registered for that client. It is not an API key or
+client secret, is never committed or printed, and this shortcut is not upstream
+release guidance.
 
 To replace the evaluation client with your own:
 
@@ -150,10 +150,11 @@ a client.
 Using your own OAuth client attributes eligible paid usage to Lumen's
 integration and may earn developer revenue share under the
 [AI Pass Terms of Service](https://aipass.one/terms-of-service). Usage covered
-by free, trial, promotional, grant, bonus, or other unpaid usage is excluded;
-dashboard terms govern rates, eligibility, and payouts. This is optional
-context, not a guarantee or a reason to merge. Thank you for considering the
-contribution. Existing platform and BYOK paths remain available. See
+by free credits, trials, promotions, grants, bonuses, or unpaid/free-user
+balances is excluded; dashboard terms govern rates, eligibility, and payouts.
+This is optional context, not a guarantee or a reason to merge. Thank you for
+considering the contribution. Existing platform and BYOK paths remain
+available. See
 [ADR-0032](docs/adr/0032-aipass-oauth-account-connection.md).
 
 ### Zero-downtime phased migrations with evidence gates
